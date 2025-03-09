@@ -4,7 +4,8 @@ SPDX-License-Identifier: LicenseRef-.amazon.com.-AmznSL-1.0
 Licensed under the Amazon Software License http://aws.amazon.com/asl/
 */
 import { Alert, Spinner } from '@cloudscape-design/components';
-import { forwardRef, useEffect, useMemo, useRef } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
+import Form, { Question } from './Form';
 import Message from './Message';
 import { CHAT_MESSAGE_PARAMS, useInprogressMessages, useListChatMessages } from '../../hooks';
 import { ChatMessage } from '../../react-query-hooks';
@@ -16,6 +17,8 @@ type ConversationViewProps = {
 
 export const ConversationView = forwardRef((props: ConversationViewProps, ref: React.ForwardedRef<HTMLDivElement>) => {
   const { chatId } = props;
+  const [formVisible, setFormVisible] = useState(true);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data, error, fetchNextPage, isFetching, isLoading, hasNextPage, refetch } = useListChatMessages({
@@ -32,6 +35,60 @@ export const ConversationView = forwardRef((props: ConversationViewProps, ref: R
     }
     return _messages;
   }, [data, inprogressMessages]);
+
+  const testQuestions: Question[] = [
+    {
+      question_id: 'q1',
+      question: 'What is your favorite color?',
+      type: 'list',
+      options: ['Red', 'Blue', 'Green', 'Yellow'],
+    },
+    {
+      question_id: 'q2',
+      question: 'What is your preferred mode of transport?',
+      type: 'list',
+      options: ['Car', 'Bicycle', 'Public Transport', 'Walking'],
+    },
+    {
+      question_id: 'q3',
+      question: 'What type of music do you enjoy?',
+      type: 'list',
+      options: ['Rock', 'Pop', 'Classical', 'Jazz'],
+    },
+    {
+      question_id: 'q4',
+      question: 'What is your favorite cuisine?',
+      type: 'list',
+      options: ['Italian', 'Chinese', 'Mexican', 'Indian'],
+    },
+    {
+      question_id: 'q5',
+      question: 'Which programming language do you like the most?',
+      type: 'list',
+      options: ['JavaScript', 'Python', 'TypeScript', 'Go'],
+    },
+  ];
+
+  const getNextQuestion = (questions: Question[]): Question | null => {
+    if (questions.length === 0) {
+      return testQuestions[0];
+    }
+
+    const index = testQuestions.findIndex((q) => q.question_id === questions[questions.length - 1].question_id);
+
+    if (index === -1 || index === testQuestions.length - 1) {
+      return null; // No next question
+    }
+
+    return testQuestions[index + 1];
+  };
+
+  // The function that gets the next question from the DynamoDB store should take the last
+  // question ID and the answer to that question; PK: parent ID, SK: answer to the parent question
+  const onExemptionSubmit = (questions: Question[]) => {
+    console.log('Questions submitted:', questions);
+    setFormVisible(false);
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -74,6 +131,7 @@ export const ConversationView = forwardRef((props: ConversationViewProps, ref: R
             }}
           />
         ))}
+        {formVisible && <Form onSubmit={onExemptionSubmit} getNextQuestion={getNextQuestion} />}
         {(isLoading || isFetching) && (
           <div
             style={{
