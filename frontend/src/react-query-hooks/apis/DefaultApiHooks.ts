@@ -24,6 +24,8 @@ import {
   ListChatMessagesRequest,
   UpdateChatRequest,
   UpdateFeedbackRequest,
+  InitiateExemptionRequest,
+  TraverseExemptionRequest,
 } from './DefaultApi';
 import { DefaultApiDefaultContext, DefaultApiClientContext } from './DefaultApiClientProvider';
 import type {
@@ -36,6 +38,8 @@ import type {
   ListChatsResponseContent,
   UpdateChatResponseContent,
   UpdateFeedbackResponseContent,
+  InitiateExemptionResponseContent,
+  TraverseExemptionResponseContent,
 } from '../models';
 
 // Import request parameter interfaces
@@ -198,12 +202,46 @@ export const useUpdateChat = <TError = ResponseError>(
 export const useUpdateFeedback = <TError = ResponseError>(
   options?: Omit<UseMutationOptions<UpdateFeedbackResponseContent, TError, UpdateFeedbackRequest>, 'mutationFn'>,
 ): UseMutationResult<UpdateFeedbackResponseContent, TError, UpdateFeedbackRequest> => {
-  console.log('Running _useUpdateFeedback');
+  // console.log('Running _useUpdateFeedback');
   const api = useContext(DefaultApiClientContext);
   if (!api) {
     throw NO_API_ERROR;
   }
   return useMutation((params: UpdateFeedbackRequest) => api.updateFeedback(params), {
+    context: DefaultApiDefaultContext,
+    ...options,
+  });
+};
+
+/**
+ * useMutation hook for the InitiateExemption operation
+ */
+export const useInitiateExemption = <TError = ResponseError>(
+  options?: Omit<UseMutationOptions<InitiateExemptionResponseContent, TError, InitiateExemptionRequest>, 'mutationFn'>,
+): UseMutationResult<InitiateExemptionResponseContent, TError, InitiateExemptionRequest> => {
+  const api = useContext(DefaultApiClientContext);
+  if (!api) {
+    throw NO_API_ERROR;
+  }
+  return useMutation((params: InitiateExemptionRequest) => api.initiateExemption(params), {
+    context: DefaultApiDefaultContext,
+    ...options,
+  });
+};
+
+/**
+ * useMutation hook for the TraverseExemption operation
+ *
+ * TODO: can we partially pass some params here?
+ */
+export const useTraverseExemption = <TError = ResponseError>(
+  options?: Omit<UseMutationOptions<TraverseExemptionResponseContent, TError, TraverseExemptionRequest>, 'mutationFn'>,
+): UseMutationResult<TraverseExemptionResponseContent, TError, TraverseExemptionRequest> => {
+  const api = useContext(DefaultApiClientContext);
+  if (!api) {
+    throw NO_API_ERROR;
+  }
+  return useMutation((params: TraverseExemptionRequest) => api.traverseExemption(params), {
     context: DefaultApiDefaultContext,
     ...options,
   });

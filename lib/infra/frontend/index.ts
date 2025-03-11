@@ -1,7 +1,6 @@
 /*
 Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-SPDX-License-Identifier: LicenseRef-.amazon.com.-AmznSL-1.0
-Licensed under the Amazon Software License http://aws.amazon.com/asl/
+SPDX-License-Identifier: Apache-2.0
 */
 import * as cdk from 'aws-cdk-lib';
 import * as cf from 'aws-cdk-lib/aws-cloudfront';

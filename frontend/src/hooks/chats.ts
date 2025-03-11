@@ -23,6 +23,8 @@ import {
   useListChatMessageSources,
   useUpdateChat,
   useUpdateFeedback as _useUpdateFeedback,
+  useInitiateExemption as _useInitiateExemption,
+  useTraverseExemption as _useTraverseExemption,
 } from '../react-query-hooks';
 
 type PaginatedListChatMessagesResponse = InfiniteData<ListChatMessagesResponseContent>;
@@ -301,4 +303,15 @@ export function useMessageSources(chatId: string, messageId: string): UseQueryRe
 
 export function useUpdateFeedbackMutation(): ReturnType<typeof _useUpdateFeedback> {
   return _useUpdateFeedback();
+}
+
+// TODO: implement optimistic updates?
+// TODO: userIDs?
+// TODO: add an onSuccess?
+export function useInitiateExemptionMutation(): ReturnType<typeof _useInitiateExemption> {
+  return _useInitiateExemption();
+}
+
+export function useTraverseExemptionMutation(): ReturnType<typeof _useTraverseExemption> {
+  return _useTraverseExemption();
 }

@@ -145,6 +145,19 @@ export class Api extends Construct {
         this.addMethod(chatIdResource, 'DELETE', chatApiHandler);
         this.addMethod(chatIdResource, 'POST', chatApiHandler);
 
+        const initExemptionResource = chatIdResource.addResource('init-exemption', {
+            defaultCorsPreflightOptions,
+        });
+        this.addMethod(initExemptionResource, 'POST', chatApiHandler);
+
+        const traverseExemptionResource = chatIdResource.addResource(
+            'traverse-exemption',
+            {
+                defaultCorsPreflightOptions,
+            }
+        );
+        this.addMethod(traverseExemptionResource, 'POST', chatApiHandler);
+
         const chatMessageResource = chatIdResource.addResource('message', {
             defaultCorsPreflightOptions,
         });

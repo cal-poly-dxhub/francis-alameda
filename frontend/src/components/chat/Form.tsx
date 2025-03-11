@@ -1,13 +1,15 @@
+/* eslint-disable */
+/* prettier-ignore */
+
 /*
 Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: LicenseRef-.amazon.com.-AmznSL-1.0
 Licensed under the Amazon Software License http://aws.amazon.com/asl/
 */
 import { Button, FormField, Select } from '@cloudscape-design/components';
-import { useState } from 'react';
 
 export type Question = {
-  question_id: string;
+  questionId: string;
   question: string;
   answer?: string;
   type: 'list'; // Forms only support list selections for now
@@ -15,9 +17,10 @@ export type Question = {
 };
 
 type FormProps = {
-  pruneOnHistoryChange?: boolean;
-  getNextQuestion: (questions: Question[]) => Question | null;
-  onSubmit: (questions: Question[]) => void; // To pass the list of questions and answers back up
+  questions: Question[];
+  onQuestionAnswered: (idx: number, answer: string) => void;
+  onSubmit: (questions: Question[]) => void;
+  submittable: boolean;
 };
 
 const FormElement = ({ question, onChange }: { question: Question; onChange: (value: string) => void }) => {
@@ -33,46 +36,20 @@ const FormElement = ({ question, onChange }: { question: Question; onChange: (va
   );
 };
 
-export default function Form({ onSubmit, pruneOnHistoryChange = true, getNextQuestion }: FormProps) {
-  // Get the first question using the getNxetQuestion function passed in as a prop
-  const initialQuestion = getNextQuestion([]);
-  const [questions, setQuestions] = useState<Question[]>(initialQuestion ? [initialQuestion] : []);
-  const [submitVisible, setSubmitVisible] = useState(false);
-
-  const handleFieldSet = (index: number, value: string) => {
-    setQuestions((prevQuestions) => {
-      const updatedQuestions = prevQuestions.map((q, i) => (i === index ? { ...q, answer: value } : q));
-
-      if (index < prevQuestions.length - 1 && pruneOnHistoryChange) {
-        updatedQuestions.splice(index + 1);
-        setSubmitVisible(false);
-      }
-
-      const nextQuestion = getNextQuestion(updatedQuestions);
-      if (nextQuestion) {
-        updatedQuestions.push(nextQuestion);
-      } else {
-        setSubmitVisible(true);
-      }
-
-      return updatedQuestions;
-    });
-  };
-
-  const handleSubmit = () => {
-    setQuestions([]);
-    // Allows the parent to retrieve the questions set in this form and de-render the form component
-    onSubmit(questions);
-  };
+export default function Form({ questions, onQuestionAnswered, onSubmit, submittable }: FormProps) {
+  const handleAnswerChange = (idx: number, value: string) => {
+    questions[idx].answer = value;
+    onQuestionAnswered(idx, value);
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem' }}>
       {questions.map((q, index) => (
-        <FormElement key={index} question={q} onChange={(value) => handleFieldSet(index, value)} />
+        <FormElement key={index} question={q} onChange={(value) => handleAnswerChange(index, value)} />
       ))}
-      {submitVisible && (
+      {submittable && (
         <div style={{ alignSelf: 'flex-start' }}>
-          <Button variant="primary" onClick={handleSubmit}>
+          <Button variant="primary" onClick={() => onSubmit(questions)}>
             Submit
           </Button>
         </div>

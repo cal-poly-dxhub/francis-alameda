@@ -29,3 +29,12 @@ class CreateInternalChatMessagesInput(BaseModel):
     content: str
     role: Literal["user", "assistant", "system"]
     sources: Optional[List[Dict[str, Any]]] = None
+
+
+class InitiateExemptionInput(BaseModel):
+    exemptionType: str
+
+
+class TraverseExemptionInput(BaseModel):
+    nodeId: str
+    answer: Optional[str]
