@@ -3,17 +3,18 @@ Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: LicenseRef-.amazon.com.-AmznSL-1.0
 Licensed under the Amazon Software License http://aws.amazon.com/asl/
 */
-import { SpaceBetween, StatusIndicator } from '@cloudscape-design/components';
+import { SpaceBetween, StatusIndicator, Modal } from '@cloudscape-design/components';
 import Header from '@cloudscape-design/components/header';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import DeleteChatButton from './components/DeleteChatButton';
 import ExportChat from './components/ExportChat';
 import HumanInputForm from './components/HumanInputForm';
 import { ConversationView } from './ConversationView';
 import { useInprogressMessages } from '../../hooks';
 import { useUpdateChatMutation } from '../../hooks/chats';
-import { Chat } from '../../react-query-hooks';
+import { Chat, useOnUpdateInferenceStatus } from '../../react-query-hooks';
 import InlineEditor from '../InlineEditor';
+import DecisionTreeForm, { Answer } from './exemption/ExemptionForm';
 
 async function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -39,6 +40,21 @@ export default function ChatPanel(props: SessionChatProps) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
   }, [conversationRef]);
+
+  const [exemptionVisible, setExemptionVisible] = useState(false);
+  useOnUpdateInferenceStatus(
+    (input) => {
+      if (input.payload?.useExemptionLogic) {
+        setExemptionVisible(true);
+      }
+    },
+    [props.chat.chatId],
+  );
+
+  const onExemptionSubmit = (answers: Answer[]) => {
+    console.log(answers);
+    setExemptionVisible(false);
+  };
 
   async function updateChatTitle(title: string) {
     await updateChat.mutateAsync({
@@ -118,6 +134,16 @@ export default function ChatPanel(props: SessionChatProps) {
           }
         </SpaceBetween>
       </div>
+
+      {/* Modal for exemption decision tree processing */}
+      <Modal
+        visible={exemptionVisible}
+        onDismiss={() => setExemptionVisible(false)}
+        header="What exemption forms should I fill out?"
+        closeAriaLabel="Submit"
+      >
+        <DecisionTreeForm onSubmit={onExemptionSubmit} />
+      </Modal>
     </div>
   );
 }
