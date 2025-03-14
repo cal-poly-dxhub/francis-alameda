@@ -161,6 +161,10 @@ class DynamoDBChatHistoryStore(BaseChatHistoryStore):
             ReturnValues="NONE",
         )
 
+    def get_decision_tree(self, user_id: str, chat_id: str) -> Optional[str]:
+        response = self.table.get_item(Key=get_chat_key(user_id, chat_id))
+        return response.get("Item", {}).get("decisionTree")
+
     def update_cost(self, user_id: str, chat_id: str, tokens: int, model_id: str, message_type: str) -> Chat:
         response = self.table.get_item(Key=get_chat_key(user_id, chat_id))
         record = response.get("Item", {})
