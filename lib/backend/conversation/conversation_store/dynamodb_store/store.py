@@ -153,6 +153,14 @@ class DynamoDBChatHistoryStore(BaseChatHistoryStore):
             userId=user_id,
         )
 
+    def store_decision_tree(self, user_id: str, chat_id: str, decision_tree: str) -> None:
+        self.table.update_item(
+            Key=get_chat_key(user_id, chat_id),
+            UpdateExpression="SET decisionTree = :decisionTree",
+            ExpressionAttributeValues={":decisionTree": decision_tree},
+            ReturnValues="NONE",
+        )
+
     def update_cost(self, user_id: str, chat_id: str, tokens: int, model_id: str, message_type: str) -> Chat:
         response = self.table.get_item(Key=get_chat_key(user_id, chat_id))
         record = response.get("Item", {})

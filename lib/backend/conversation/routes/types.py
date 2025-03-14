@@ -25,6 +25,10 @@ class CreateChatMessageInput(ChatIdMixin):
     question: str
 
 
+class StoreDecisionTreeInput(BaseModel):
+    decision_tree: str
+
+
 class CreateInternalChatMessagesInput(BaseModel):
     content: str
     role: Literal["user", "assistant", "system"]

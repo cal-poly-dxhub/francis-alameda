@@ -97,5 +97,9 @@ class BaseChatHistoryStore(ABC):
         raise NotImplementedError("This method should be implemented by subclasses.")
 
     @abstractmethod
+    def store_decision_tree(self, user_id: str, chat_id: str, decision_tree: str) -> None:
+        raise NotImplementedError("This method should be implemented by subclasses.")
+
+    @abstractmethod
     def list_chat_message_sources(self, user_id: str, message_id: str) -> List[ChatMessageSource]:
         raise NotImplementedError("This method should be implemented by subclasses.")
