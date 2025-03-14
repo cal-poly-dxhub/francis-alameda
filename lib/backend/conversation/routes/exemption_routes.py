@@ -28,3 +28,16 @@ def store_decision_tree(chat_id: str, user_id: str) -> Dict:
             "status": "success",
         },
     }
+@router.get("/chat/<chat_id>/exemption-tree")
+@tracer.capture_method
+def get_exemption_tree(chat_id: str) -> Dict:
+    """
+    Returns the tax exemption decision tree for a chat, if it exists.
+    """
+
+    user_id = router.context.get("user_id", "")
+    chat_history_store = get_chat_history_store()
+    decision_tree = chat_history_store.get_decision_tree(user_id, chat_id)
+    return {
+        "decisionTree": decision_tree,
+    }

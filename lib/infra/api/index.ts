@@ -145,6 +145,10 @@ export class Api extends Construct {
         this.addMethod(chatIdResource, 'DELETE', chatApiHandler);
         this.addMethod(chatIdResource, 'POST', chatApiHandler);
 
+        const exemptionTreeResource = chatIdResource.addResource('exemption-tree', {
+            defaultCorsPreflightOptions,
+        });
+        this.addMethod(exemptionTreeResource, 'GET', chatApiHandler);
         const chatMessageResource = chatIdResource.addResource('message', {
             defaultCorsPreflightOptions,
         });

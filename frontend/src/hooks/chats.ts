@@ -23,6 +23,7 @@ import {
   useListChatMessageSources,
   useUpdateChat,
   useUpdateFeedback as _useUpdateFeedback,
+  useLoadExemptionTree as _useLoadExemptionTree,
 } from '../react-query-hooks';
 
 type PaginatedListChatMessagesResponse = InfiniteData<ListChatMessagesResponseContent>;
@@ -301,4 +302,10 @@ export function useMessageSources(chatId: string, messageId: string): UseQueryRe
 
 export function useUpdateFeedbackMutation(): ReturnType<typeof _useUpdateFeedback> {
   return _useUpdateFeedback();
+}
+
+export function useLoadExemptionTree(
+  ...args: Parameters<typeof _useListChatMessages>
+): ReturnType<typeof _useLoadExemptionTree> {
+  return _useLoadExemptionTree(args[0]); // chatId
 }

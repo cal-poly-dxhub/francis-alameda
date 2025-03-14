@@ -28,6 +28,7 @@ import type {
   UpdateChatResponseContent,
   UpdateFeedbackRequestContent,
   UpdateFeedbackResponseContent,
+  LoadExemptionTreeResponseContent,
 } from '../models';
 import {
     CreateChatMessageRequestContentToJSON,
@@ -43,6 +44,7 @@ import {
     UpdateChatResponseContentFromJSON,
     UpdateFeedbackRequestContentToJSON,
     UpdateFeedbackResponseContentFromJSON,
+    LoadExemptionTreeResponseContentFromJSON,
 } from '../models';
 
 export interface CreateChatRequest {
@@ -88,6 +90,10 @@ export interface UpdateFeedbackRequest {
     // TODO: Is this duplicated data?
     chatId: string;
     updateFeedbackRequestContent: UpdateFeedbackRequestContent;
+}
+
+export interface LoadExemptionTreeRequest {
+    chatId: string;
 }
 
 /**
@@ -404,4 +410,35 @@ export class DefaultApi extends runtime.BaseAPI {
         return await response.value();
     }
 
+    /**
+     */
+    async loadExemptionTreeRaw(requestParameters: LoadExemptionTreeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LoadExemptionTreeResponseContent>> {
+        if (requestParameters.chatId === null || requestParameters.chatId === undefined) {
+            throw new runtime.RequiredError('chatId','Required parameter requestParameters.chatId was null or undefined when calling loadExemptionTree.');
+        }
+
+        console.log("Rerunning loadExemptionTree: ", requestParameters.chatId);
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const path = `/chat/{chatId}/exemption-tree`.replace(`{${"chatId"}}`, encodeURIComponent(String(requestParameters.chatId)));
+
+        const response = await this.request({
+            path: path,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => LoadExemptionTreeResponseContentFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async loadExemptionTree(requestParameters: LoadExemptionTreeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LoadExemptionTreeResponseContent> {
+        const response = await this.loadExemptionTreeRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 }

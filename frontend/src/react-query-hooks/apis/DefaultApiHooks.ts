@@ -24,6 +24,7 @@ import {
   ListChatMessagesRequest,
   UpdateChatRequest,
   UpdateFeedbackRequest,
+  LoadExemptionTreeRequest,
 } from './DefaultApi';
 import { DefaultApiDefaultContext, DefaultApiClientContext } from './DefaultApiClientProvider';
 import type {
@@ -36,6 +37,7 @@ import type {
   ListChatsResponseContent,
   UpdateChatResponseContent,
   UpdateFeedbackResponseContent,
+  LoadExemptionTreeResponseContent,
 } from '../models';
 
 // Import request parameter interfaces
@@ -206,5 +208,23 @@ export const useUpdateFeedback = <TError = ResponseError>(
   return useMutation((params: UpdateFeedbackRequest) => api.updateFeedback(params), {
     context: DefaultApiDefaultContext,
     ...options,
+  });
+};
+
+/**
+ * useQuery hook for the LoadExemptionTree operation
+ */
+export const useLoadExemptionTree = <TError = ResponseError>(
+  params: LoadExemptionTreeRequest,
+  options?: Omit<UseQueryOptions<LoadExemptionTreeResponseContent, TError>, 'queryKey' | 'queryFn'>,
+): UseQueryResult<LoadExemptionTreeResponseContent, TError> => {
+  const api = useContext(DefaultApiClientContext);
+  if (!api) {
+    throw NO_API_ERROR;
+  }
+
+  return useQuery(['loadExemptionTree', params], () => api.loadExemptionTree(params), {
+    context: DefaultApiDefaultContext,
+    ...(options as any),
   });
 };
