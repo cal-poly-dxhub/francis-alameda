@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, FormField, Select, Button, SpaceBetween } from '@cloudscape-design/components';
 import './Exemptions.css';
 
-interface DecisionNode {
+export interface DecisionNode {
   question?: string;
   decision?: string;
   yes?: DecisionNode;
@@ -19,32 +19,11 @@ export interface Answer {
 
 interface DecisionTreeFormProps {
   onSubmit: (answers: Answer[]) => void;
+  tree: DecisionNode;
 }
 
-const decisionTree: DecisionNode = {
-  question: "Is it raining?",
-  yes: {
-    question: "Do you have an umbrella?",
-    yes: {
-      decision: "Go outside."
-    },
-    no: {
-      decision: "Stay inside."
-    }
-  },
-  no: {
-    question: "Is it sunny?",
-    yes: {
-      decision: "Wear sunglasses."
-    },
-    no: {
-      decision: "Go outside as usual."
-    }
-  }
-};
-
-const DecisionTreeForm: React.FC<DecisionTreeFormProps> = ({ onSubmit }) => {
-  const [nodes, setNodes] = useState<DecisionNode[]>([decisionTree]);
+const DecisionTreeForm: React.FC<DecisionTreeFormProps> = ({ onSubmit, tree }) => {
+  const [nodes, setNodes] = useState<DecisionNode[]>([tree]);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [newQuestionIndex, setNewQuestionIndex] = useState<number | null>(null);
 
@@ -66,6 +45,8 @@ const DecisionTreeForm: React.FC<DecisionTreeFormProps> = ({ onSubmit }) => {
     setNodes(newNodes.slice(0, index + 2));
     setNewQuestionIndex(index + 1);
   };
+
+  console.log("DecisionTreeForm got tree: ", tree);
 
   const handleSubmit = () => {
     onSubmit(answers);

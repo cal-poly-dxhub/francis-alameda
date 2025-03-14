@@ -1,3 +1,6 @@
+/* eslint-disable */
+/* prettier-ignore */
+
 /*
 Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: LicenseRef-.amazon.com.-AmznSL-1.0
@@ -5,16 +8,16 @@ Licensed under the Amazon Software License http://aws.amazon.com/asl/
 */
 import { SpaceBetween, StatusIndicator, Modal } from '@cloudscape-design/components';
 import Header from '@cloudscape-design/components/header';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import DeleteChatButton from './components/DeleteChatButton';
 import ExportChat from './components/ExportChat';
 import HumanInputForm from './components/HumanInputForm';
 import { ConversationView } from './ConversationView';
 import { useInprogressMessages } from '../../hooks';
-import { useUpdateChatMutation } from '../../hooks/chats';
+import { useUpdateChatMutation, useLoadExemptionTree } from '../../hooks/chats';
 import { Chat, useOnUpdateInferenceStatus } from '../../react-query-hooks';
 import InlineEditor from '../InlineEditor';
-import DecisionTreeForm, { Answer } from './exemption/ExemptionForm';
+import DecisionTreeForm, { Answer, DecisionNode } from './exemption/ExemptionForm';
 
 async function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -41,20 +44,32 @@ export default function ChatPanel(props: SessionChatProps) {
     }
   }, [conversationRef]);
 
-  const [exemptionVisible, setExemptionVisible] = useState(false);
+  const [exemptionTree, setExemptionTree] = useState<DecisionNode | null>(null);
+  const { data: exemptionTreeData, refetch: refetchTree } = useLoadExemptionTree({ chatId: props.chat.chatId });
   useOnUpdateInferenceStatus(
     (input) => {
       if (input.payload?.useExemptionLogic) {
-        setExemptionVisible(true);
+        refetchTree()
       }
     },
     [props.chat.chatId],
   );
 
+  useEffect(() => {
+    if (exemptionTreeData) {
+      const parsedTree = exemptionTreeData.decisionTree ? JSON.parse(exemptionTreeData.decisionTree) : null;
+      setExemptionTree(parsedTree);
+    }
+  }, [exemptionTreeData]);
+
   const onExemptionSubmit = (answers: Answer[]) => {
     console.log(answers);
-    setExemptionVisible(false);
+    setExemptionTree(null);
   };
+
+  const onExemptionDismiss = () => {
+    setExemptionTree(null);
+  }
 
   async function updateChatTitle(title: string) {
     await updateChat.mutateAsync({
@@ -137,12 +152,12 @@ export default function ChatPanel(props: SessionChatProps) {
 
       {/* Modal for exemption decision tree processing */}
       <Modal
-        visible={exemptionVisible}
-        onDismiss={() => setExemptionVisible(false)}
+        visible={exemptionTree != null && exemptionTree !== undefined}
+        onDismiss={onExemptionDismiss}
         header="What exemption forms should I fill out?"
         closeAriaLabel="Submit"
       >
-        <DecisionTreeForm onSubmit={onExemptionSubmit} />
+        {exemptionTree && <DecisionTreeForm onSubmit={onExemptionSubmit} tree={exemptionTree} />}
       </Modal>
     </div>
   );
