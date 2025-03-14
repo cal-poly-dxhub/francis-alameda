@@ -113,6 +113,14 @@ export class BaseInfra extends Construct {
             ...props,
         });
 
+        this.toolkitLayer = new lambda.LayerVersion(this, 'PdfToolLayer', {
+            code: lambda.Code.fromAsset(
+                path.join(constants.BACKEND_DIR, 'layers', 'pdf-tools-layer')
+            ),
+            description: 'Utilities to process pdfs (pdfplumber and textractor).',
+            ...props,
+        });
+
         if (props.systemConfig.wafConfig?.enableApiGatewayWaf) {
             this.webAcl = new WafWebAcl(this, 'WafWebACL', {
                 wafName: `FrancisApiWebAcl${props.systemConfig.applicationName ?? ''}`,
