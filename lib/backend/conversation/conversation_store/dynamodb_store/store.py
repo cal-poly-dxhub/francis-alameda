@@ -19,6 +19,7 @@ from .utils import (
 )
 from .cost import get_model_costs
 from decimal import Decimal
+import json
 
 
 class DynamoDBChatHistoryStore(BaseChatHistoryStore):
@@ -153,7 +154,7 @@ class DynamoDBChatHistoryStore(BaseChatHistoryStore):
             userId=user_id,
         )
 
-    def store_decision_tree(self, user_id: str, chat_id: str, decision_tree: str) -> None:
+    def store_decision_tree(self, user_id: str, chat_id: str, decision_tree: Optional[str]) -> None:
         self.table.update_item(
             Key=get_chat_key(user_id, chat_id),
             UpdateExpression="SET decisionTree = :decisionTree",
@@ -161,9 +162,14 @@ class DynamoDBChatHistoryStore(BaseChatHistoryStore):
             ReturnValues="NONE",
         )
 
-    def get_decision_tree(self, user_id: str, chat_id: str) -> Optional[str]:
+    def get_decision_tree(self, user_id: str, chat_id: str, parse: bool = False) -> Optional[str | dict]:
         response = self.table.get_item(Key=get_chat_key(user_id, chat_id))
-        return response.get("Item", {}).get("decisionTree")
+        raw_dt = response.get("Item", {}).get("decisionTree")
+
+        if parse:
+            return json.loads(raw_dt) if raw_dt else None
+        else:
+            return raw_dt
 
     def update_cost(self, user_id: str, chat_id: str, tokens: int, model_id: str, message_type: str) -> Chat:
         response = self.table.get_item(Key=get_chat_key(user_id, chat_id))

@@ -29,6 +29,10 @@ class StoreDecisionTreeInput(BaseModel):
     decision_tree: str
 
 
+class CloseExemptionInput(BaseModel):
+    answers: Optional[List[str]]
+
+
 class CreateInternalChatMessagesInput(BaseModel):
     content: str
     role: Literal["user", "assistant", "system"]

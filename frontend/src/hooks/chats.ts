@@ -24,6 +24,7 @@ import {
   useUpdateChat,
   useUpdateFeedback as _useUpdateFeedback,
   useLoadExemptionTree as _useLoadExemptionTree,
+  useCloseExemption as _useCloseExemption,
 } from '../react-query-hooks';
 
 type PaginatedListChatMessagesResponse = InfiniteData<ListChatMessagesResponseContent>;
@@ -308,4 +309,77 @@ export function useLoadExemptionTree(
   ...args: Parameters<typeof _useListChatMessages>
 ): ReturnType<typeof _useLoadExemptionTree> {
   return _useLoadExemptionTree(args[0]); // chatId
+}
+
+// TODO: this function is the same as useCreateChatMessageMutation (with different
+// input parameters). Consider refactoring?
+export function useCloseExemptionMutation(
+  chatId: string,
+  onSuccess?: () => void,
+): ReturnType<typeof _useCloseExemption> {
+  const isAdmin = useIsAdmin();
+  const queryClient = useQueryClient();
+
+  const listChatMessagesQueryKey = queryKeyGenerators.listChatMessages(chatId);
+
+  const closeExemption = _useCloseExemption({
+    onSuccess: (response, _vars) => {
+      const { question, answer, sources, traceData } = response;
+
+      // No new messages if the exemption was closed without answers
+      if (!question || !answer) {
+        return;
+      }
+
+      if (isAdmin && traceData) {
+        set(answer, 'traceData', traceData);
+      }
+
+      queryClient.setQueryData(listChatMessagesQueryKey, (old: PaginatedListChatMessagesResponse | undefined) => {
+        return produce(old, (draft) => {
+          if (question && answer) {
+            const lastPage: ListChatMessagesResponseContent | undefined = last(draft?.pages || []) as any;
+
+            if (lastPage) {
+              const chatMessages = lastPage.chatMessages;
+
+              if (chatMessages == null) {
+                console.warn('Failed to inject new chat turn into query cache');
+                queryClient
+                  .resetQueries({
+                    queryKey: [listChatMessagesQueryKey],
+                  })
+                  .catch(console.error);
+              } else {
+                chatMessages.push(question, answer);
+              }
+            } else {
+              return {
+                pages: [
+                  {
+                    chatMessages: [question, answer],
+                  },
+                ],
+                pageParams: [null],
+              } as PaginatedListChatMessagesResponse;
+            }
+
+            onSuccess && onSuccess();
+          }
+          return draft;
+        });
+      });
+
+      // add sources
+      const listChatMessageSourcesQueryKey = queryKeyGenerators.listChatMessageSources(chatId, answer.messageId);
+      queryClient.setQueryData(listChatMessageSourcesQueryKey, (): ListChatMessageSourcesResponseContent => {
+        return {
+          chatMessageSources: sources,
+        };
+      });
+    },
+    mutationKey: ['closeExemption', chatId],
+  });
+
+  return closeExemption;
 }

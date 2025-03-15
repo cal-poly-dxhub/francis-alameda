@@ -149,6 +149,8 @@ export class Api extends Construct {
             defaultCorsPreflightOptions,
         });
         this.addMethod(exemptionTreeResource, 'GET', chatApiHandler);
+        this.addMethod(exemptionTreeResource, 'POST', chatApiHandler);
+
         const chatMessageResource = chatIdResource.addResource('message', {
             defaultCorsPreflightOptions,
         });

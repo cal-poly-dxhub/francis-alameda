@@ -25,6 +25,7 @@ import {
   UpdateChatRequest,
   UpdateFeedbackRequest,
   LoadExemptionTreeRequest,
+  CloseExemptionRequest,
 } from './DefaultApi';
 import { DefaultApiDefaultContext, DefaultApiClientContext } from './DefaultApiClientProvider';
 import type {
@@ -38,6 +39,7 @@ import type {
   UpdateChatResponseContent,
   UpdateFeedbackResponseContent,
   LoadExemptionTreeResponseContent,
+  CloseExemptionResponseContent,
 } from '../models';
 
 // Import request parameter interfaces
@@ -200,7 +202,7 @@ export const useUpdateChat = <TError = ResponseError>(
 export const useUpdateFeedback = <TError = ResponseError>(
   options?: Omit<UseMutationOptions<UpdateFeedbackResponseContent, TError, UpdateFeedbackRequest>, 'mutationFn'>,
 ): UseMutationResult<UpdateFeedbackResponseContent, TError, UpdateFeedbackRequest> => {
-  console.log('Running _useUpdateFeedback');
+  // console.log('Running _useUpdateFeedback');
   const api = useContext(DefaultApiClientContext);
   if (!api) {
     throw NO_API_ERROR;
@@ -226,5 +228,18 @@ export const useLoadExemptionTree = <TError = ResponseError>(
   return useQuery(['loadExemptionTree', params], () => api.loadExemptionTree(params), {
     context: DefaultApiDefaultContext,
     ...(options as any),
+  });
+};
+
+export const useCloseExemption = <TError = ResponseError>(
+  options?: Omit<UseMutationOptions<CloseExemptionResponseContent, TError, CloseExemptionRequest>, 'mutationFn'>,
+): UseMutationResult<CloseExemptionResponseContent, TError, CloseExemptionRequest> => {
+  const api = useContext(DefaultApiClientContext);
+  if (!api) {
+    throw NO_API_ERROR;
+  }
+  return useMutation((params: CloseExemptionRequest) => api.closeExemption(params), {
+    context: DefaultApiDefaultContext,
+    ...options,
   });
 };
