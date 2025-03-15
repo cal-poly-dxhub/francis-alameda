@@ -14,7 +14,7 @@ import ExportChat from './components/ExportChat';
 import HumanInputForm from './components/HumanInputForm';
 import { ConversationView } from './ConversationView';
 import { useInprogressMessages } from '../../hooks';
-import { useUpdateChatMutation, useLoadExemptionTree } from '../../hooks/chats';
+import { useUpdateChatMutation, useLoadExemptionTree, useCloseExemptionMutation } from '../../hooks/chats';
 import { Chat, useOnUpdateInferenceStatus } from '../../react-query-hooks';
 import InlineEditor from '../InlineEditor';
 import DecisionTreeForm, { Answer, DecisionNode } from './exemption/ExemptionForm';
@@ -46,6 +46,8 @@ export default function ChatPanel(props: SessionChatProps) {
 
   const [exemptionTree, setExemptionTree] = useState<DecisionNode | null>(null);
   const { data: exemptionTreeData, refetch: refetchTree } = useLoadExemptionTree({ chatId: props.chat.chatId });
+  const closeExemption = useCloseExemptionMutation(props.chat.chatId, () => { });
+
   useOnUpdateInferenceStatus(
     (input) => {
       if (input.payload?.useExemptionLogic) {
@@ -56,19 +58,36 @@ export default function ChatPanel(props: SessionChatProps) {
   );
 
   useEffect(() => {
-    if (exemptionTreeData) {
-      const parsedTree = exemptionTreeData.decisionTree ? JSON.parse(exemptionTreeData.decisionTree) : null;
+    if (exemptionTreeData?.decisionTree) {
+      const parsedTree = JSON.parse(exemptionTreeData.decisionTree);
       setExemptionTree(parsedTree);
+    } else {
+      setExemptionTree(null);
     }
   }, [exemptionTreeData]);
 
   const onExemptionSubmit = (answers: Answer[]) => {
-    console.log(answers);
+    const request = {
+      answers: answers.map((answer) => answer.answer),
+    }
+
     setExemptionTree(null);
+
+    closeExemption.mutateAsync({
+      chatId: props.chat.chatId,
+      closeExemptionRequestContent: request,
+    }).then(() => {
+      refetchTree();
+    });
   };
 
   const onExemptionDismiss = () => {
-    setExemptionTree(null);
+    closeExemption.mutateAsync({
+      chatId: props.chat.chatId,
+      closeExemptionRequestContent: { answers: null },
+    }).then(() => {
+      refetchTree();
+    });
   }
 
   async function updateChatTitle(title: string) {
