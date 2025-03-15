@@ -57,7 +57,7 @@ def summarize_decision_path(tree, answers):
 
     for answer in answers:
         if "question" in node:
-            path.append(f"Q: {node['question']} → A: {answer}")
+            path.append(f"{node['question']} → {answer}")
             if answer in node:
                 node = node[answer]
             else:
