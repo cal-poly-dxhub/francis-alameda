@@ -32,6 +32,7 @@ export class BaseInfra extends Construct {
     public readonly powerToolsLayer: lambda.ILayerVersion;
     public readonly langchainLayer: lambda.ILayerVersion;
     public readonly toolkitLayer: lambda.ILayerVersion;
+    public readonly pdftoolLayer: lambda.ILayerVersion;
     public readonly wsAuthorizerLayer: lambda.ILayerVersion;
     public readonly solutionInfo: SolutionInfo;
     public readonly systemConfig: SystemConfig;
@@ -113,7 +114,7 @@ export class BaseInfra extends Construct {
             ...props,
         });
 
-        this.toolkitLayer = new lambda.LayerVersion(this, 'PdfToolLayer', {
+        this.pdftoolLayer = new lambda.LayerVersion(this, 'PdfToolLayer', {
             code: lambda.Code.fromAsset(
                 path.join(constants.BACKEND_DIR, 'layers', 'pdf-tools-layer')
             ),
