@@ -4,12 +4,30 @@ from aws_lambda_powertools import Logger, Tracer
 from francis_toolkit.utils import invoke_lambda_function
 import json
 import re
+from typing import Dict
 
 from common.utils import CONVERSATION_LAMBDA_FUNC_NAME, format_documents, get_corpus_documents
 from llms.models import get_llm_class
 
 logger = Logger()
 tracer = Tracer()
+
+
+@tracer.capture_method
+def _report_decision_tree_error(chat_id: str, user_id: str) -> None:
+    """
+    Reports an error in generating the decision tree, assuming the handler
+    at the end of the route will clear the decision tree.
+    """
+
+    request_payload = {
+        "path": f"/internal/chat/{chat_id}/user/{user_id}/decision-tree",
+        "httpMethod": "PUT",
+        "pathParameters": {"chat_id": chat_id, "user_id": user_id},
+        "body": json.dumps({"error": "no_information"}),
+    }
+
+    _ = invoke_lambda_function(CONVERSATION_LAMBDA_FUNC_NAME, request_payload)
 
 
 @tracer.capture_method
@@ -22,13 +40,13 @@ def extract_decision_tree(response: str) -> dict:
         try:
             return json.loads(tree_str)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Extracted content is not valid JSON: {e}")
+            return {"error": "no_information"}
 
-    raise ValueError("No valid decision tree found in the response.")
+    return {"error": f"no_information"}
 
 
 @tracer.capture_method
-def _generate_exemption_tree(user_query: str, exemption_config: dict, embedding_model: EmbeddingModel) -> str:
+def _generate_exemption_tree(user_query: str, exemption_config: dict, embedding_model: EmbeddingModel, user_id: str) -> Dict:
     """
     Creates an exemption decision tree based on a user query, producing a JSON
     string.
@@ -59,18 +77,16 @@ def _generate_exemption_tree(user_query: str, exemption_config: dict, embedding_
 
     logger.info(f"TREE GENERATION - rag question: {question} llm_response: {llm_response} context: {context}")
     tree = extract_decision_tree(llm_response)
-
-    # TODO: Validate llm_response as JSON first?
-    return json.dumps(tree)
+    return tree
 
 
-def _store_in_conversation_store(chat_id: str, user_id: str, decision_tree: str) -> None:
+def _store_in_conversation_store(chat_id: str, user_id: str, decision_tree: dict) -> None:
 
     request_payload = {
         "path": f"/internal/chat/{chat_id}/user/{user_id}/decision-tree",
         "httpMethod": "PUT",
         "pathParameters": {"chat_id": chat_id, "user_id": user_id},
-        "body": json.dumps({"decision_tree": decision_tree}),
+        "body": json.dumps({"decision_tree": json.dumps(decision_tree)}),
     }
 
     _ = invoke_lambda_function(CONVERSATION_LAMBDA_FUNC_NAME, request_payload)
@@ -84,5 +100,5 @@ def generate_exemption_tree(
     Creates an exemption decision tree based on a user query, producing a JSON
     string.
     """
-    decision_tree = _generate_exemption_tree(user_query, exemption_config, embedding_model)
+    decision_tree = _generate_exemption_tree(user_query, exemption_config, embedding_model, user_id)
     _store_in_conversation_store(chat_id=chat_id, user_id=user_id, decision_tree=decision_tree)

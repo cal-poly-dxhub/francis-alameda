@@ -107,7 +107,7 @@ def run_rag_chain(
             )
 
             if (classification_type == ClassificationType.EXEMPTION_LOGIC) and exemption_config is not None:
-                generate_exemption_tree(user_q, exemption_config, embedding_model, user_id, chat_id)
+                generate_exemption_tree(user_q, exemption_config, embedding_model, chat_id, user_id)
 
             return {
                 "question": {**human_message, "text": user_q},

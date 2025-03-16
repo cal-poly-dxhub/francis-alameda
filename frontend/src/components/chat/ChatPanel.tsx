@@ -60,7 +60,13 @@ export default function ChatPanel(props: SessionChatProps) {
   useEffect(() => {
     if (exemptionTreeData?.decisionTree) {
       const parsedTree = JSON.parse(exemptionTreeData.decisionTree);
-      setExemptionTree(parsedTree);
+
+      if (parsedTree.error) {
+        setExemptionTree(null);
+      } else {
+        setExemptionTree(parsedTree);
+      }
+
     } else {
       setExemptionTree(null);
     }

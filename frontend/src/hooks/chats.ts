@@ -306,9 +306,23 @@ export function useUpdateFeedbackMutation(): ReturnType<typeof _useUpdateFeedbac
 }
 
 export function useLoadExemptionTree(
-  ...args: Parameters<typeof _useListChatMessages>
+  ...args: Parameters<typeof _useLoadExemptionTree>
 ): ReturnType<typeof _useLoadExemptionTree> {
-  return _useLoadExemptionTree(args[0]); // chatId
+  const queryClient = useQueryClient();
+
+  return _useLoadExemptionTree(args[0], {
+    onSuccess: (data) => {
+      // Invalidate the chat messages query to display an error message
+      if (data.decisionTree && JSON.parse(data.decisionTree).error) {
+        queryClient
+          .invalidateQueries(queryKeyGenerators.listChatMessages(args[0].chatId))
+          .then(() => console.log('Invalidated chat messages query'))
+          .catch((error) =>
+            console.error('Failed to invalidate chat messages query after load exemption tree errored.', error),
+          );
+      }
+    },
+  });
 }
 
 // TODO: this function is the same as useCreateChatMessageMutation (with different

@@ -1,15 +1,55 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict
+from typing import Dict, Optional
+from enum import Enum
 from aws_lambda_powertools import Logger, Tracer
 from aws_lambda_powertools.event_handler.api_gateway import Router
+from botocore.compat import json
 from conversation_store import get_chat_history_store
 from .types import StoreDecisionTreeInput, CloseExemptionInput
+from conversation_store.base import BaseChatHistoryStore
 
 tracer = Tracer()
 router = Router()
 logger = Logger()
+
+
+class DecisionTreeErrorType(str, Enum):
+    """
+    Types of errors that can be reported instead of a decision tree.
+    """
+
+    NO_INFORMATION = "no_information"
+
+
+def report_no_information(store: BaseChatHistoryStore, chat_id: str, user_id: str):
+    """
+    Reports that there is no information to be found in the decision tree.
+    """
+
+    store.create_chat_message(
+        user_id=user_id,
+        chat_id=chat_id,
+        content="I don't have enough information to help you with this. Can you please try asking another question?",
+        message_type="ai",
+        tokens=0,
+    )
+
+
+def report_decision_tree_error(chat_id: str, user_id: str, error_str: str, store: BaseChatHistoryStore):
+    """
+    Reports decision tree errors by creating messages.
+    """
+    error_dict = json.loads(error_str)
+
+    match error_dict.get("error"):
+        case DecisionTreeErrorType.NO_INFORMATION.value:
+            report_no_information(store, chat_id, user_id)
+        case None:
+            raise ValueError("report_decision_tree_error called on a non-error")
+        case _:
+            raise ValueError("Invalid decision tree error type")
 
 
 @router.put("/internal/chat/<chat_id>/user/<user_id>/decision-tree")
@@ -22,19 +62,25 @@ def store_decision_tree(chat_id: str, user_id: str) -> Dict:
 
     decision_tree = StoreDecisionTreeInput(**router.current_event.json_body).decision_tree
     store = get_chat_history_store()
-    store.store_decision_tree(chat_id, user_id, decision_tree)
+
+    if decision_tree is not None and json.loads(decision_tree).get("error"):
+        report_decision_tree_error(chat_id, user_id, decision_tree, store)
+    else:
+        store.store_decision_tree(user_id, chat_id, decision_tree)
+
     return {
         "data": {
             "status": "success",
         },
     }
 
+
 def reduce_tree(tree: dict, answers: list[str]) -> str:
     """
     Obtains the decision and formats it nicely.
     """
 
-    FORMAT = "Based on your answers, you should try filling out form {}."
+    FORMAT = "{}"
     answers = answers.copy()
     while answers:
         answer = answers.pop(0)
