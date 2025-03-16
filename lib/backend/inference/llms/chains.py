@@ -115,7 +115,7 @@ def run_rag_chain(
                 "sources": ai_message.get("sources"),
                 "traceData": app_trace.get_trace(),
                 "handoffTriggered": classification_response.get("handoff_state"),
-                "useExemptionLogic": classification_type == ClassificationType.EXEMPTION_LOGIC,
+                "useExemptionLogic": classification_type == ClassificationType.EXEMPTION_LOGIC and exemption_config is not None,
             }
 
     standalone_q = user_q
