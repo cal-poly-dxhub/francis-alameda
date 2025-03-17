@@ -34,7 +34,7 @@ class LLMBase(ABC):
         classification_type: ClassificationType = ClassificationType.QUESTION,
         streaming_context: Optional[StreamingContext] = None,
         **kwargs: dict,
-    ) -> str:
+    ) -> tuple[str, int, int]:
         pass
 
 class RerankerBase(ABC):
@@ -147,9 +147,8 @@ class BedrockLLM(LLMBase):
         classification_type: ClassificationType = ClassificationType.QUESTION,
         streaming_context: Optional[StreamingContext] = None,
         **kwargs: dict,
-    ) -> str:
+    ) -> tuple[str, int, int]:
         final_prompt = format_template_variables(prompt_template, prompt_variables, **kwargs)
-
         model_kwargs = model_config.get("modelKwargs", {})
         inference_config = {
             "maxTokens": int(model_kwargs.get("maxTokens", 1024)),
@@ -160,10 +159,29 @@ class BedrockLLM(LLMBase):
         if "stopSequences" in model_kwargs:
             inference_config["stopSequences"] = model_kwargs["stopSequences"]
 
+        guardrail_config = None
+        if os.getenv("GUARDRAIL_ARN"):
+            guardrail_config = {
+                "guardrailIdentifier": os.getenv("GUARDRAIL_ARN"),
+                "guardrailVersion": os.getenv("GUARDRAIL_VERSION", "DRAFT"),
+                "trace": "enabled"
+            }
+            if streaming_context is not None:
+                guardrail_config["streamProcessingMode"] = "sync"
+                    
         app_trace.add("inference_config", inference_config)
         app_trace.add("prompt", final_prompt)
 
-        content: list[dict] = [{"text": final_prompt}]
+        content: list[dict] = [
+            {"text": final_prompt},
+            {
+                "guardContent": {
+                    "text": {
+                        "text": final_prompt
+                    }
+                }
+            }
+        ] if guardrail_config else [{"text": final_prompt}]
 
         if classification_type == ClassificationType.PROMOTION and "promotion_image_url" in kwargs:
             global promotion_image_bytes
@@ -173,7 +191,7 @@ class BedrockLLM(LLMBase):
 
         try:
             logger.debug(f"Prompt is sent to {model_config['modelId']}: {final_prompt}")
-
+                        
             converse_kwargs = {
                 "modelId": model_config["modelId"],
                 "messages": [
@@ -192,22 +210,52 @@ class BedrockLLM(LLMBase):
                 "inferenceConfig": inference_config,
             }
 
+            if guardrail_config:
+                converse_kwargs["guardrailConfig"] = guardrail_config
+
             inference_result = ""
+            input_tokens = 0
+            output_tokens = 0
 
             if streaming_context is not None:
-                response = self.client.converse_stream(**converse_kwargs)
-                for event in response["stream"]:
-                    if "contentBlockDelta" in event:
-                        content_delta_text = event["contentBlockDelta"]["delta"]["text"]
+                try:
+                    response = self.client.converse_stream(**converse_kwargs)
+                    for event in response["stream"]:
+                        if "contentBlockDelta" in event:
+                            content_delta_text = event["contentBlockDelta"]["delta"]["text"]
+                            stream_llm_response(
+                                streaming_context.connectionId,
+                                {
+                                    "chatId": streaming_context.chatId,
+                                    "messageId": streaming_context.messageId,
+                                    "chunks": [content_delta_text],
+                                },
+                            )
+                            inference_result += content_delta_text
+                        if "usage" in event:
+                            input_tokens = event["usage"].get("inputTokens", 0)
+                            output_tokens = event["usage"].get("outputTokens", 0)
+                except botocore.exceptions.ClientError as err:
+                    if "ContentFilterException" in str(err):
+                        app_trace.add("content_filter_exception", {
+                            "error": str(err),
+                            "type": "input" if "input" in str(err).lower() else "output"
+                        })
+                        blocked_message = (
+                            kwargs.get("blocked_input_message", "Input was filtered by content safety guardrails")
+                            if "input" in str(err).lower()
+                            else kwargs.get("blocked_output_message", "Output was filtered by content safety guardrails")
+                        )
                         stream_llm_response(
                             streaming_context.connectionId,
                             {
                                 "chatId": streaming_context.chatId,
                                 "messageId": streaming_context.messageId,
-                                "chunks": [content_delta_text],
+                                "chunks": [blocked_message],
                             },
                         )
-                        inference_result += content_delta_text
+                        return (blocked_message, 0, 0)
+                    raise
             else:
                 response = self.client.converse(**converse_kwargs)
                 app_trace.add("inference_response", response)
@@ -219,18 +267,29 @@ class BedrockLLM(LLMBase):
                 ):
                     logger.error(f"Invalid response from {model_config['modelId']}. Stop reason: {response['stopReason']}")
                     inference_result = ""
+                    input_tokens = output_tokens = 0
                 else:
                     inference_result = response["output"]["message"]["content"][0]["text"]
+                    input_tokens, output_tokens = response["usage"]["inputTokens"], response["usage"]["outputTokens"]
 
             logger.debug(f"Response received from {model_config['modelId']}: {inference_result}")
-            return inference_result
+            return (inference_result, input_tokens, output_tokens)
 
         except botocore.exceptions.ClientError as err:
+            if "ContentFilterException" in str(err):
+                app_trace.add("content_filter_exception", {
+                    "error": str(err),
+                    "type": "input" if "input" in str(err).lower() else "output"
+                })
+                if "input" in str(err).lower():
+                    return (kwargs.get("blocked_input_message", "Input was filtered by content safety guardrails"), 0, 0)
+                return (kwargs.get("blocked_output_message", "Output was filtered by content safety guardrails"), 0, 0)
+            
             logger.error("A client error occurred: %s", err.response["Error"]["Message"])
         except Exception as err:
             logger.error("An error occurred: %s", err)
 
-        return ""
+        return ("", 0, 0)
 
 
 class SagemakerLLM(LLMBase):

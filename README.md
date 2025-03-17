@@ -1,22 +1,25 @@
 ### Table of contents
 
--   [Francis GenAI RAG ChatBot on AWS](#francis-genai-rag-chatbot-on-aws)
--   [Licence](#icence)
--   [Key features](#key-features)
--   [Architecture overview](#architecture-overview)
-    -   [Architecture reference diagram](#architecture-reference-diagram)
-    -   [Solution components](#solution-components)
--   [Prerequisites](#prerequisites)
-    -   [Build environment specifications](#build-environment-specifications)
-    -   [AWS account](#aws-account)
-    -   [Tools](#tools)
--   [How to build and deploy the solution](#how-to-build-and-deploy-the-solution)
-    -   [Configuration](#configuration)
-    -   [Build and deploy](#build-and-deploy)
--   [RAG processing flows](#rag-processing-flows)
--   [How to ingest the documents into vector store](#how-to-ingest-the-documents-into-vector-store)
--   [Access the solution web UI](#access-the-solution-web-ui)
--   [Uninstall the solution](#uninstall-the-solution)
+- [Francis GenAI RAG ChatBot on AWS](#francis-genai-rag-chatbot-on-aws)
+- [Licence](#licence)
+- [Key Features](#key-features)
+- [Architecture overview](#architecture-overview)
+  - [Architecture reference diagram](#architecture-reference-diagram)
+  - [Solution components](#solution-components)
+- [Prerequisites](#prerequisites)
+  - [Build environment specifications](#build-environment-specifications)
+  - [AWS account](#aws-account)
+  - [Tools](#tools)
+- [How to build and deploy the solution](#how-to-build-and-deploy-the-solution)
+  - [Configuration](#configuration)
+  - [Build and deploy](#build-and-deploy)
+- [RAG Processing Flows](#rag-processing-flows)
+- [How to ingest the documents into vector store](#how-to-ingest-the-documents-into-vector-store)
+  - [Method 1: Default Pipeline (Aurora PostgreSQL)](#method-1-default-pipeline-aurora-postgresql)
+  - [Method 2: Amazon Bedrock Knowledge Base (OpenSearch Serverless)](#method-2-amazon-bedrock-knowledge-base-opensearch-serverless)
+- [Access the solution web UI](#access-the-solution-web-ui)
+- [File structure](#file-structure)
+- [Uninstall the solution](#uninstall-the-solution)
 
 ---
 
@@ -46,8 +49,9 @@ or in the "license" file accompanying this file. This file is distributed on an 
 3. **AWS Bedrock Integration**: 
    - Direct access to state-of-the-art foundation models through AWS Bedrock
    - Seamless integration with Bedrock Knowledge Base for enhanced RAG capabilities
-   - Support for various embedding models and text generation models
+   - Support for various embedding models, text generation and reranking models
    - Built-in document processing and chunking capabilities when using Bedrock Knowledge Base
+   - Support for Bedrock Guardrails to filter harmful content and redact sensitive information 
 
 4. **Interactive Chatbot Interface**: User-friendly interface supporting:
    - Natural language conversations
@@ -335,6 +339,48 @@ Specify settings for the large language models, including streaming, conversatio
 
     > **Note**: Reranking may increase latency and costs as it involves an additional model inference step.
 
+-   **guardrailConfig (optional)**: Configuration for content moderation and PII protection. Guardrails help ensure safe and compliant interactions by filtering inappropriate content and handling sensitive information.
+    ```yaml
+    guardrailConfig:
+      contentFilters:
+        - type: <content filter type (HATE, VIOLENCE, SEXUAL)>
+          inputStrength: <filter strength for input (LOW, MEDIUM, HIGH)>
+          outputStrength: <filter strength for output (LOW, MEDIUM, HIGH)>
+      piiFilters:
+        - type: <PII filter type (EMAIL, PHONE, NAME, etc.)>
+          action: <action to take on PII (ANONYMIZE, BLOCK)>
+      blockedMessages:
+        input: <custom message for blocked input>
+        output: <custom message for blocked output>
+    ```
+
+    Example:
+    ```yaml
+    guardrailConfig:
+      contentFilters:
+        - type: HATE            
+          inputStrength: HIGH
+          outputStrength: HIGH
+        - type: VIOLENCE         
+          inputStrength: HIGH
+          outputStrength: HIGH
+        - type: SEXUAL           
+          inputStrength: MEDIUM
+          outputStrength: MEDIUM
+      piiFilters:
+        - type: EMAIL            
+          action: ANONYMIZE         
+        - type: PHONE           
+          action: ANONYMIZE        
+        - type: NAME            
+          action: ANONYMIZE          
+      blockedMessages:
+        input: "I apologize, but I cannot process your request as it may contain inappropriate content. Please rephrase your question."
+        output: "I apologize, but I cannot provide that type of response. Please try asking a different question."
+    ```
+
+    When enabled, guardrails are applied to both user inputs and AI responses. Content filters help prevent harmful or inappropriate content, while PII filters protect sensitive personal information.
+
 **RAG configuration**
 
 -   **vectorStoreConfig**: Configuration for the vector store. This solution supports two types of vector stores: Amazon Aurora PostgreSQL and Amazon OpenSearch Serverless.
@@ -423,6 +469,29 @@ chatHistoryConfig:
   storeType: <dynamodb | aurora_postgres>
 ```
 
+**Handoff mechanism configuration (optional)**
+This solution supports a handoff mechanism to transfer the conversation to a human agent after a certain number of requests from the user. 
+
+Under classificationChainConfig -> promptTemplate, the model should be configured to return another classification type "handoff_request". If handoff is not enabled, this type should not be present.
+
+```yaml
+handoffConfig:
+  model:
+    provider: <bedrock> 
+    modelId: <the Bedrock ID of the handoff model>
+    supportsSystemPrompt: <true | false - whether the model supports system prompts via Converse API>
+    modelKwArgs: # Optional; uses Bedrock defaults if not set
+      maxTokens: 1024
+      temperature: 0.1
+      topP: 0.99
+      stopSequences: [ '...' ]
+  handoffThreshold: <the (integer) number of requests after which the handoff mechanism is triggered>
+  details: <optional list of details for the summarizer LLM to focus on>
+  handoffPrompts: # Each field is individually optional and handoffPrompts is optional
+    handoffRequested: <optional prompt for the model when the user requests a handoff and one has not been triggered>
+    handoffJustTriggered: <optional prompt for the model when the most recent request triggered handoff>
+    handoffCompleting: <optional prompt for the model when the handoff has been triggered and the user asks for a human again>
+```
 
 **AWS WAF configuration (optional)**
 This solution provisions AWS WAF Web ACL for API Gateway resources, by default. For a CloudFront distribution WAF Web ACL, the solution allows users to associate their existing AWS WAF Web ACL for CloudFront with the CloudFront distribution created by the solution. Refer to the configuration options below for configuring your AWS WAF Web ACL.

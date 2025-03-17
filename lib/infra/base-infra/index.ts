@@ -8,6 +8,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as bedrock from 'aws-cdk-lib/aws-bedrock';
 import * as ddb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
@@ -39,6 +40,7 @@ export class BaseInfra extends Construct {
     public readonly configTable: ddb.Table;
     public readonly webAcl?: wafv2.CfnWebACL;
     public readonly removalPolicy?: cdk.RemovalPolicy;
+    public readonly guardrail?: bedrock.CfnGuardrail;
 
     public constructor(scope: Construct, id: string, props: BaseInfraProps) {
         super(scope, id);
@@ -128,6 +130,34 @@ export class BaseInfra extends Construct {
                 allowedExternalIPRanges:
                     props.systemConfig.wafConfig.allowedExternalIpAranges,
             }).webAcl;
+        }
+
+        if (props.systemConfig.llmConfig.guardrailConfig) {
+            const config = props.systemConfig.llmConfig.guardrailConfig;
+            this.guardrail = new bedrock.CfnGuardrail(this, 'ContentSafetyGuardrail', {
+                name: 'francis-chatbot-safety',
+                blockedInputMessaging: config.blockedMessages.input,
+                blockedOutputsMessaging: config.blockedMessages.output,
+                contentPolicyConfig: config.contentFilters && {
+                    filtersConfig: config.contentFilters.map((filter) => ({
+                        inputStrength: filter.inputStrength,
+                        outputStrength: filter.outputStrength,
+                        type: filter.type,
+                    })),
+                },
+                sensitiveInformationPolicyConfig: config.piiFilters && {
+                    piiEntitiesConfig: config.piiFilters.map((filter) => ({
+                        action: filter.action,
+                        type: filter.type,
+                    })),
+                },
+            });
+
+            this.guardrail.applyRemovalPolicy(
+                props.systemConfig.retainData
+                    ? cdk.RemovalPolicy.RETAIN
+                    : cdk.RemovalPolicy.DESTROY
+            );
         }
     }
 
@@ -333,6 +363,17 @@ export class BaseInfra extends Construct {
         this.grantBedrockModelAccess(lambdaFunc, regionModelIds);
     }
 
+    public grantBedrockGuardrailAccess(lambdaFunc: lambda.IFunction): void {
+        if (this.guardrail) {
+            lambdaFunc.addToRolePolicy(
+                new iam.PolicyStatement({
+                    effect: iam.Effect.ALLOW,
+                    actions: ['bedrock:ApplyGuardrail'],
+                    resources: [this.guardrail.attrGuardrailArn],
+                })
+            );
+        }
+    }
     public grantBedrockTextModelAccess(lambdaFunc: lambda.IFunction): void {
         const regionModelIds = new Map<string, Set<string>>();
 
@@ -349,6 +390,20 @@ export class BaseInfra extends Construct {
                 regionModelIds.set(region, modelIds);
             }
         });
+
+        this.grantBedrockModelAccess(lambdaFunc, regionModelIds);
+    }
+
+    public grantBedrockHandoffModelAccess(lambdaFunc: lambda.IFunction): void {
+        if (this.systemConfig.handoffConfig?.modelConfig.provider !== 'bedrock') {
+            return;
+        }
+
+        const region =
+            this.systemConfig.handoffConfig.modelConfig.region ?? cdk.Aws.REGION;
+        const regionModelIds = new Map<string, Set<string>>([
+            [region, new Set([this.systemConfig.handoffConfig.modelConfig.modelId])],
+        ]);
 
         this.grantBedrockModelAccess(lambdaFunc, regionModelIds);
     }

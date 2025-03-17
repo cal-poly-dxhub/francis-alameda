@@ -133,6 +133,8 @@ export class Api extends Construct {
         props.conversationTable.grantReadWriteData(chatApiHandler);
         props.rdsSecret?.grantRead(chatApiHandler);
 
+        props.baseInfra.grantBedrockHandoffModelAccess(chatApiHandler);
+
         this.addMethod(chatResource, 'GET', chatApiHandler);
         this.addMethod(chatResource, 'PUT', chatApiHandler);
 
@@ -153,10 +155,29 @@ export class Api extends Construct {
         });
         this.addMethod(chatMessageIdResource, 'DELETE', chatApiHandler);
 
+        const feedbackResource = chatMessageIdResource.addResource('feedback', {
+            defaultCorsPreflightOptions,
+        });
+        this.addMethod(feedbackResource, 'PUT', chatApiHandler);
+
         const chatMessageSourceResource = chatMessageIdResource.addResource('source', {
             defaultCorsPreflightOptions,
         });
         this.addMethod(chatMessageSourceResource, 'GET', chatApiHandler);
+
+        const userResource = chatIdResource.addResource('user', {
+            defaultCorsPreflightOptions,
+        });
+
+        const userIdResource = userResource.addResource('{userId}', {
+            defaultCorsPreflightOptions,
+        });
+
+        const handoffResource = userIdResource.addResource('handoff', {
+            defaultCorsPreflightOptions,
+        });
+
+        this.addMethod(handoffResource, 'GET', chatApiHandler);
 
         return chatApiHandler;
     }
@@ -223,11 +244,13 @@ export class Api extends Construct {
             /* eslint-disable @typescript-eslint/naming-convention */
             CONVERSATION_LAMBDA_FUNC_NAME: conversationLambda.functionName,
             CORPUS_LAMBDA_FUNC_NAME: corpusLambda.functionName,
+            GUARDRAIL_ARN: props.baseInfra.guardrail?.attrGuardrailArn ?? '',
             /* eslint-enable @typescript-eslint/naming-convention */
         });
         props.baseInfra.grantBedrockTextModelAccess(inferenceLambda);
         props.baseInfra.grantSagemakerTextModelAccess(inferenceLambda);
         props.baseInfra.grantBedrockRerankingAccess(inferenceLambda);
+        props.baseInfra.grantBedrockGuardrailAccess(inferenceLambda);
 
         conversationLambda.grantInvoke(inferenceLambda);
         corpusLambda.grantInvoke(inferenceLambda);

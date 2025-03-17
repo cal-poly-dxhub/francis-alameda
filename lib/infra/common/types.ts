@@ -79,6 +79,8 @@ export interface LLMModelBase extends ModelBase {
 
 export interface BedRockLLMModel extends LLMModelBase {
     readonly provider: 'bedrock';
+    // NOTE: for review: this allows passing system prompts via Converse API when available
+    readonly supportsSystemPrompt: boolean;
 }
 
 export interface SageMakerLLMModel extends LLMModelBase {
@@ -131,6 +133,7 @@ export interface LLMConfig {
     maxConversationHistory?: number;
     maxCorpusDocuments?: number;
     corpusSimilarityThreshold?: number;
+    guardrailConfig?: GuardrailConfig;
     qaChainConfig: LLMChainConfig;
     rerankingConfig?: RerankingConfig;
     standaloneChainConfig?: LLMChainConfig;
@@ -142,6 +145,39 @@ export interface RerankingConfig {
     kwargs?: {
         numberOfResults?: number;
         additionalModelRequestFields?: Record<string, unknown>;
+    };
+}
+
+export interface HandoffPrompts {
+    handoffRequested: string;
+    handoffJustTriggered: string;
+    handoffCompleting: string;
+}
+
+export interface HandoffConfig {
+    details?: string[];
+    modelConfig: BedRockLLMModel;
+    handoffThreshold: number;
+    handoffPrompts: HandoffPrompts;
+}
+
+export interface GuardrailPiiConfig {
+    type: string;
+    action: string;
+}
+
+export interface GuardrailFilterConfig {
+    type: string;
+    inputStrength: string;
+    outputStrength: string;
+}
+
+export interface GuardrailConfig {
+    contentFilters: GuardrailFilterConfig[];
+    piiFilters?: GuardrailPiiConfig[];
+    blockedMessages: {
+        input: string;
+        output: string;
     };
 }
 
@@ -161,6 +197,7 @@ export interface SystemConfig {
     chatHistoryConfig?: {
         storeType: 'dynamodb' | 'aurora_postgres';
     };
+    handoffConfig?: HandoffConfig;
     wafConfig?: WafConfig;
 }
 
