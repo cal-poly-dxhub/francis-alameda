@@ -70,7 +70,7 @@ def store_decision_tree(chat_id: str, user_id: str) -> Dict:
         report_decision_tree_error(chat_id, user_id, decision_tree, store)
     else:
         logger.info(f"store_decision_tree in exemption_routes got sources: {sources}")
-        store.store_decision_tree(user_id, chat_id, decision_tree)
+        store.store_decision_tree(user_id, chat_id, decision_tree, sources)
 
     return {
         "data": {
@@ -133,10 +133,10 @@ def close_exemption(chat_id: str):
     user_id = router.context.get("user_id", "")
 
     if request.answers is None:
-        chat_history_store.store_decision_tree(user_id, chat_id, None)
+        chat_history_store.store_decision_tree(user_id, chat_id, None, None)
         return {}
 
-    tree = chat_history_store.get_decision_tree(user_id, chat_id, parse=True)
+    tree, sources = chat_history_store.get_decision_tree(user_id, chat_id, parse=True)
 
     if not tree:
         raise ValueError("No decision tree found for this chat")
@@ -145,7 +145,7 @@ def close_exemption(chat_id: str):
     decision = reduce_tree(tree, request.answers)
     form_summary = summarize_decision_path(tree, request.answers)
 
-    chat_history_store.store_decision_tree(user_id, chat_id, None)
+    chat_history_store.store_decision_tree(user_id, chat_id, None, None)
     form_message = chat_history_store.create_chat_message(
         user_id=user_id, chat_id=chat_id, content=form_summary, message_type="human", tokens=0
     ).model_dump()
@@ -180,7 +180,7 @@ def get_exemption_tree(chat_id: str) -> Dict:
 
     user_id = router.context.get("user_id", "")
     chat_history_store = get_chat_history_store()
-    decision_tree = chat_history_store.get_decision_tree(user_id, chat_id)
+    decision_tree, _ = chat_history_store.get_decision_tree(user_id, chat_id)
     return {
         "decisionTree": decision_tree,
     }

@@ -97,11 +97,13 @@ class BaseChatHistoryStore(ABC):
         raise NotImplementedError("This method should be implemented by subclasses.")
 
     @abstractmethod
-    def store_decision_tree(self, user_id: str, chat_id: str, decision_tree: Optional[str]) -> None:
+    def store_decision_tree(self, user_id: str, chat_id: str, decision_tree: Optional[str], sources: Optional[str]) -> None:
         raise NotImplementedError("This method should be implemented by subclasses.")
 
     @abstractmethod
-    def get_decision_tree(self, user_id: str, chat_id: str, parse: bool = False) -> Optional[str | dict]:
+    def get_decision_tree(
+        self, user_id: str, chat_id: str, parse: bool = False
+    ) -> tuple[Optional[str | dict], Optional[str | list]]:
         raise NotImplementedError("This method should be implemented by subclasses.")
 
     @abstractmethod
