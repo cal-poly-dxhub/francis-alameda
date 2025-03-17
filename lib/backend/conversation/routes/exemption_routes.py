@@ -60,12 +60,16 @@ def store_decision_tree(chat_id: str, user_id: str) -> Dict:
     appropriate field of the conversation store, for query in exemption logic.
     """
 
-    decision_tree = StoreDecisionTreeInput(**router.current_event.json_body).decision_tree
+    request = StoreDecisionTreeInput(**router.current_event.json_body)
+
+    decision_tree = request.decision_tree
+    sources = request.sources
     store = get_chat_history_store()
 
     if decision_tree is not None and json.loads(decision_tree).get("error"):
         report_decision_tree_error(chat_id, user_id, decision_tree, store)
     else:
+        logger.info(f"store_decision_tree in exemption_routes got sources: {sources}")
         store.store_decision_tree(user_id, chat_id, decision_tree)
 
     return {

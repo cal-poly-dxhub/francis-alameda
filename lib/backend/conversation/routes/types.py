@@ -27,6 +27,7 @@ class CreateChatMessageInput(ChatIdMixin):
 
 class StoreDecisionTreeInput(BaseModel):
     decision_tree: Optional[str]
+    sources: Optional[str]
 
 
 class CloseExemptionInput(BaseModel):

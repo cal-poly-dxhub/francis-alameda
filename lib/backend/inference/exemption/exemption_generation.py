@@ -4,7 +4,7 @@ from aws_lambda_powertools import Logger, Tracer
 from francis_toolkit.utils import invoke_lambda_function
 import json
 import re
-from typing import Dict
+from typing import Dict, List
 
 from common.utils import CONVERSATION_LAMBDA_FUNC_NAME, format_documents, get_corpus_documents
 from llms.models import get_llm_class
@@ -33,6 +33,7 @@ def _report_decision_tree_error(chat_id: str, user_id: str) -> None:
 @tracer.capture_method
 def extract_decision_tree(response: str) -> dict:
     """Extracts the decision tree JSON from the model's response."""
+    logger.info(f"extract_decision_tree - Extracting decision tree from response: {response}")
     match = re.search(r"<exemption_decision_tree>(.*?)</exemption_decision_tree>", response, re.DOTALL)
 
     if match:
@@ -40,13 +41,17 @@ def extract_decision_tree(response: str) -> dict:
         try:
             return json.loads(tree_str)
         except json.JSONDecodeError as e:
+            logger.error(f"Error decoding decision tree: {e}")
             return {"error": "no_information"}
 
     return {"error": f"no_information"}
 
 
+# TODO: better types
 @tracer.capture_method
-def _generate_exemption_tree(user_query: str, exemption_config: dict, embedding_model: EmbeddingModel, user_id: str) -> Dict:
+def _generate_exemption_tree(
+    user_query: str, exemption_config: dict, embedding_model: EmbeddingModel, user_id: str
+) -> tuple[Dict, List]:
     """
     Creates an exemption decision tree based on a user query, producing a JSON
     string.
@@ -77,16 +82,29 @@ def _generate_exemption_tree(user_query: str, exemption_config: dict, embedding_
 
     logger.info(f"TREE GENERATION - rag question: {question} llm_response: {llm_response} context: {context}")
     tree = extract_decision_tree(llm_response)
-    return tree
+    return tree, corpus_documents
 
 
-def _store_in_conversation_store(chat_id: str, user_id: str, decision_tree: dict) -> None:
+# TODO: types
+def _store_in_conversation_store(chat_id: str, user_id: str, decision_tree: dict, sources: list) -> None:
+
+    pair = {
+        "decision_tree": json.dumps(decision_tree),
+        "sources": json.dumps(sources),
+    }
+
+    # request_payload = {
+    #     "path": f"/internal/chat/{chat_id}/user/{user_id}/decision-tree",
+    #     "httpMethod": "PUT",
+    #     "pathParameters": {"chat_id": chat_id, "user_id": user_id},
+    #     "body": json.dumps({"decision_tree": json.dumps(decision_tree)}),
+    # }
 
     request_payload = {
         "path": f"/internal/chat/{chat_id}/user/{user_id}/decision-tree",
         "httpMethod": "PUT",
         "pathParameters": {"chat_id": chat_id, "user_id": user_id},
-        "body": json.dumps({"decision_tree": json.dumps(decision_tree)}),
+        "body": json.dumps(pair),
     }
 
     _ = invoke_lambda_function(CONVERSATION_LAMBDA_FUNC_NAME, request_payload)
@@ -100,5 +118,5 @@ def generate_exemption_tree(
     Creates an exemption decision tree based on a user query, producing a JSON
     string.
     """
-    decision_tree = _generate_exemption_tree(user_query, exemption_config, embedding_model, user_id)
-    _store_in_conversation_store(chat_id=chat_id, user_id=user_id, decision_tree=decision_tree)
+    decision_tree, sources = _generate_exemption_tree(user_query, exemption_config, embedding_model, user_id)
+    _store_in_conversation_store(chat_id=chat_id, user_id=user_id, decision_tree=decision_tree, sources=sources)
