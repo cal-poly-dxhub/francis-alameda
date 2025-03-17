@@ -3,7 +3,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Form, FormField, Select, Button, SpaceBetween } from '@cloudscape-design/components';
-import './Exemptions.css';
 
 export interface DecisionNode {
   question?: string;
