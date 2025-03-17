@@ -81,6 +81,7 @@ export class IngestionPipeline extends Construct {
                 props.baseInfra.powerToolsLayer,
                 props.baseInfra.langchainLayer,
                 props.baseInfra.toolkitLayer,
+                props.baseInfra.pdftoolLayer,
             ],
         };
 
