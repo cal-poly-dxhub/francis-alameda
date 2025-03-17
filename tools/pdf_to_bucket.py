@@ -94,6 +94,8 @@ def main():
     # Start processing PDFs
     process_pdfs_from_urls(pdf_urls, download_folder, bucket_name)
 
+    print("PDF Processing Complete!")
+
 
 if __name__ == '__main__':
     main()
