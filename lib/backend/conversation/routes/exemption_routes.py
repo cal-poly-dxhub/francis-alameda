@@ -137,6 +137,7 @@ def close_exemption(chat_id: str):
         return {}
 
     tree, sources = chat_history_store.get_decision_tree(user_id, chat_id, parse=True)
+    sources = sources if sources else []
 
     if not tree:
         raise ValueError("No decision tree found for this chat")
@@ -150,7 +151,7 @@ def close_exemption(chat_id: str):
         user_id=user_id, chat_id=chat_id, content=form_summary, message_type="human", tokens=0
     ).model_dump()
     decision_message = chat_history_store.create_chat_message(
-        user_id=user_id, chat_id=chat_id, content=decision, message_type="ai", tokens=0
+        user_id=user_id, chat_id=chat_id, content=decision, message_type="ai", tokens=0, sources=sources
     ).model_dump()
 
     # TODO: inconsistent types between the ChatMessage frontend model
@@ -163,7 +164,7 @@ def close_exemption(chat_id: str):
     return {
         "question": form_message,
         "answer": decision_message,
-        "sources": [],
+        "sources": sources,
         "traceData": {
             "decisionTree": tree,
             "answers": request.answers,
