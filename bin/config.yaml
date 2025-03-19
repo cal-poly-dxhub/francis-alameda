@@ -1,6 +1,6 @@
 systemConfig:
   retainData: false
-  applicationName: almed
+  applicationName: francis-alameda
   llmConfig:
     streaming: true
     maxConversationHistory: 5
@@ -45,6 +45,14 @@ systemConfig:
             <response>yes</response>
             <instruction>Politely reply that you cannot answer this question. Use the language of the query to answer</instruction>
         </type_3>
+        <type_4>
+            <name>exemption_logic</name>
+            <description>
+            Questions about whether a user qualifies for a tax exemption. Note: the user must specifically ask you to help them determine forms to fill out to obtain a tax exemption.
+            </description> 
+            <response>yes</response>
+            <instruction>Say the words "Searching..."--NOTHING MORE.</instruction>
+        </type_4>
         </types>
 
         ###
