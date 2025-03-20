@@ -18,4 +18,10 @@ sudo yum install -y awscli
 
 sudo yum install -y jq
 
+# Install Docker
+sudo yum install -y docker
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker $USER
+
 sudo yum clean all
