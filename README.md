@@ -9,7 +9,6 @@
 -   [Prerequisites](#prerequisites)
     -   [Build environment specifications](#build-environment-specifications)
     -   [AWS account](#aws-account)
-    -   [Tools](#tools)
 -   [How to build and deploy the solution](#how-to-build-and-deploy-the-solution)
     -   [Build and deploy](#build-and-deploy)
     -   [Configuration](#configuration)
@@ -149,7 +148,9 @@ Both configurations maintain the same high-level architecture while offering dif
 ### Build environment specifications
 
 -   The computer used to build the solution must be able to access the internet.
--   The computer used to build the solution must have Docker Desktop installed. Install Docker Desktop for your platform (Mac, Windows, etc.) [here](https://docs.docker.com/desktop/).
+-   The computer must have Docker Desktop installed. Install Docker Desktop for your platform (Mac, Windows, etc.) [here](https://docs.docker.com/desktop/).
+-   The computer should also have the Git CLI installed and clone permissions for this repo. 
+
 
 ### AWS account
 
@@ -160,6 +161,11 @@ Both configurations maintain the same high-level architecture while offering dif
 ## How to build and deploy the solution
 
 ### Build and deploy
+
+- Run a Git clone:
+```
+git clone -b deployment https://github.com/cal-poly-dxhub/francis-alameda && cd francis-alameda
+``` 
 
 -   Set your AWS credentials and an administrator email in `deployment/credentials.env`.
 -   Run `docker-compose run deployment`.
