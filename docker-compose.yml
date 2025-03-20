@@ -1,9 +1,9 @@
 name: alameda-francis-deployment
-
 services:
     deployment:
-        image: amazonlinux:2023
+        image: docker:dind
         platform: linux/arm64
+        privileged: true # Required for Docker-in-Docker
         env_file:
             - path: ./deployment/credentials.env
               required: true
@@ -12,20 +12,31 @@ services:
         build:
             context: .
             dockerfile_inline: |
-                FROM amazonlinux:2023
+                FROM docker:dind
+
+                # Install dependencies
+                RUN apk add --no-cache \
+                    nodejs \
+                    npm \
+                    python3 \
+                    py3-pip \
+                    curl \
+                    jq \
+                    bash \
+                    aws-cli
+
+                # Set up QEMU for ARM emulation
+                RUN apk add --no-cache qemu-aarch64 qemu-arm
+                RUN mkdir -p /etc/docker
+                RUN echo '{"experimental": true}' > /etc/docker/daemon.json
 
                 WORKDIR /app
 
-                RUN curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - 
-                RUN yum install -y nodejs && \
-                    npm install -g npm@11.2.0
-                RUN yum install -y python3 python3-pip 
-                RUN yum install -y aws-cli
-                RUN yum install -y jq
+                # Copy entrypoint script
+                COPY deployment/docker-entrypoint.sh /usr/local/bin/
+                RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-                ENV PATH="/usr/bin:${PATH}"
-
-                CMD [ "bash", "deployment/deployment.sh" ]
-
-        stdin_open: true # Keep stdin open for interactive mode
-        tty: true # Allocate a pseudo-TTY
+                ENTRYPOINT ["docker-entrypoint.sh"]
+                CMD ["bash", "deployment/deployment.sh"]
+        stdin_open: true
+        tty: true
