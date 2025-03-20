@@ -14,7 +14,10 @@ export INPUT_BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name Franc
 sleep 3
 
 URL_FILE="tools/urls.txt"
-pip3 install -r tools/requirements.txt
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r tools/requirements.txt
 
 echo "Syncing files from S3 bucket alameda-tax-codes to $INPUT_BUCKET_NAME"
 aws s3 sync s3://alameda-tax-codes/ s3://$INPUT_BUCKET_NAME
