@@ -1,7 +1,6 @@
 name: alameda-francis-deployment
 services:
     deployment:
-        image: docker:dind
         platform: linux/arm64
         privileged: true # Required for Docker-in-Docker
         env_file:
@@ -11,32 +10,6 @@ services:
             - .:/app
         build:
             context: .
-            dockerfile_inline: |
-                FROM docker:dind
-
-                # Install dependencies
-                RUN apk add --no-cache \
-                    nodejs \
-                    npm \
-                    python3 \
-                    py3-pip \
-                    curl \
-                    jq \
-                    bash \
-                    aws-cli
-
-                # Set up QEMU for ARM emulation
-                RUN apk add --no-cache qemu-aarch64 qemu-arm
-                RUN mkdir -p /etc/docker
-                RUN echo '{"experimental": true}' > /etc/docker/daemon.json
-
-                WORKDIR /app
-
-                # Copy entrypoint script
-                COPY deployment/docker-entrypoint.sh /usr/local/bin/
-                RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-                ENTRYPOINT ["docker-entrypoint.sh"]
-                CMD ["bash", "deployment/deployment.sh"]
+            dockerfile: ./deployment/Dockerfile
         stdin_open: true
         tty: true
