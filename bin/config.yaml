@@ -50,7 +50,7 @@ systemConfig:
         <type_4>
             <name>exemption_logic</name>
             <description>
-            Questions about whether a user qualifies for a tax exemption. Note: the user must specifically ask you to help them determine forms to fill out to obtain a tax exemption.
+            Questions about whether a user qualifies for a tax exemption. Note: the user must specifically ask you to help them determine forms to fill out to obtain a tax exemption. This is NOT THE SAME AS ASKING ABOUT EXEMPTIONS IN GENERAL. They must ask which forms they need to fill out for particular exemptions.
             </description> 
             <response>yes</response>
             <instruction>Say the words "Searching..."--NOTHING MORE.</instruction>
