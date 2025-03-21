@@ -532,6 +532,26 @@ handoffConfig:
         handoffJustTriggered: <optional prompt for the model when the most recent request triggered handoff>
         handoffCompleting: <optional prompt for the model when the handoff has been triggered and the user asks for a human again>
 ```
+**Exemption mechanism configuration**
+
+This solution supports a mechanism to open a form and ask questions to determine what exemption request forms a user might want to fill out (using an LLM-generated decision tree). Under classificationChainConfig -> promptTemplate, the model should be configured to return another classification type "exemption_logic" with no response. 
+
+```yaml
+exemptionConfig:
+    model:
+        provider: <bedrock>
+        modelId: <the Bedrock ID of model used for generating exemption decision trees>
+        supportsSystemPrompt: <true | false - whether the model supports system prompts via Converse API>
+        modelKwArgs: # Optional; uses Bedrock defaults if not set
+            maxTokens: 1024
+            temperature: 0.1
+            topP: 0.95
+            stopSequences: ['...']
+    promptTemplate: <template prompt for generating exemption decision trees; takes ${user_query} and ${context} arguments>
+    corpusLimit: <number of documents to include in the exemption decision tree corpus, default is 5>
+    corpusSimilarityThreshold: <threshold for similarity score to include a document in the exemption decision tree corpus, default is 0.5>
+```
+
 
 **AWS WAF configuration (optional)**
 This solution provisions AWS WAF Web ACL for API Gateway resources, by default. For a CloudFront distribution WAF Web ACL, the solution allows users to associate their existing AWS WAF Web ACL for CloudFront with the CloudFront distribution created by the solution. Refer to the configuration options below for configuring your AWS WAF Web ACL.
