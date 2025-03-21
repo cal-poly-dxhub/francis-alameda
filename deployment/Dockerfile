@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 docker:dind
+FROM docker:dind
 
 # Install dependencies
 RUN apk add --no-cache \
