@@ -1,4 +1,4 @@
-### Table of contents
+x### Table of contents
 
 -   [Francis GenAI RAG ChatBot on AWS](#francis-genai-rag-chatbot-on-aws)
 -   [Licence](#licence)
@@ -155,6 +155,7 @@ Both configurations maintain the same high-level architecture while offering dif
 ### AWS account
 
 -   **Access to Amazon Bedrock foundation models**: Access to Amazon Bedrock foundation models isn't granted by default. In order to gain access to a foundation model, an IAM user with sufficient permissions needs to request access to it through the console. Once access is provided to a model, it is available for all users in the account. To manage model access, sign into the [Amazon Bedrock console](https://console.aws.amazon.com/bedrock/). Then select Model access at the bottom of the left navigation pane.
+-   **Lambda concurrency limits**: In the AWS Console's top search bar, search for "Service Quotas". Ensure that this value is a significant amount above 50 (the number of Lambda functions this deployment is configured to use during document ingestion). The AWS account default is 1000.
 
 ---
 
