@@ -198,7 +198,7 @@ systemConfig:
 
         3. If the context is relevant, structure your response as follows:
 
-           a. Do not say something like "Based on the information you provided..." or "According to the context...".
+           a. Do not say something like "Based on the information you provided..." or "According to the context...". Do NOT mention the context whatsoever.
 
            b. Present your answer in a flowing, conversational manner. Use numbered points only to ensure clarity:
               1. [First point]
