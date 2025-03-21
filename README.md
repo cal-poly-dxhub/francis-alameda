@@ -1,4 +1,4 @@
-x### Table of contents
+### Table of contents
 
 -   [Francis GenAI RAG ChatBot on AWS](#francis-genai-rag-chatbot-on-aws)
 -   [Licence](#licence)
