@@ -60,15 +60,26 @@ export class Api extends Construct {
             },
         });
 
-        const corpusLambda = this.createCorpusResources(api, props);
-        const conversationLambda = this.createChatResources(api, props);
+        /* eslint-disable @typescript-eslint/no-unused-vars */
+        const [corpusLambda, corpusLambdaAlias] = this.createCorpusResources(api, props);
+        /* eslint-enable @typescript-eslint/no-unused-vars */
 
-        const inferenceLambda = this.createInferenceResources(
+        /* eslint-disable @typescript-eslint/no-unused-vars */
+        const [conversationLambda, conversationLambdaAlias] = this.createChatResources(
+            api,
+            props
+        );
+        /* eslint-enable @typescript-eslint/no-unused-vars */
+
+        /* eslint-disable @typescript-eslint/no-unused-vars */
+        const [inferenceLambda, inferenceLambdaAlias] = this.createInferenceResources(
             api,
             props,
             conversationLambda,
             corpusLambda
         );
+        /* eslint-enable @typescript-eslint/no-unused-vars */
+
         this.inferenceLambda = inferenceLambda;
         this.webSocket = new WebSocket(this, 'WebSocket', {
             baseInfra: props.baseInfra,
@@ -115,7 +126,10 @@ export class Api extends Construct {
         });
     }
 
-    private createChatResources(api: apigw.RestApi, props: ApiProps): lambda.Function {
+    private createChatResources(
+        api: apigw.RestApi,
+        props: ApiProps
+    ): [lambda.Function, lambda.IFunction] {
         const chatResource = api.root.addResource('chat', {
             defaultCorsPreflightOptions,
         });
@@ -202,10 +216,13 @@ export class Api extends Construct {
 
         this.addMethod(downloadResource, 'GET', chatApiHandler);
 
-        return chatApiHandler;
+        return [chatApiHandler, chatApiHandlerAlias];
     }
 
-    private createCorpusResources(api: apigw.RestApi, props: ApiProps): lambda.Function {
+    private createCorpusResources(
+        api: apigw.RestApi,
+        props: ApiProps
+    ): [lambda.Function, lambda.IFunction] {
         const corpusResource = api.root.addResource('corpus', {
             defaultCorsPreflightOptions,
         });
@@ -252,7 +269,7 @@ export class Api extends Construct {
         });
         this.addMethod(embeddingQueryResource, 'POST', corpusApiHandler);
 
-        return corpusApiHandler;
+        return [corpusApiHandler, corpusApiHandlerAlias];
     }
 
     private createInferenceResources(
@@ -260,7 +277,7 @@ export class Api extends Construct {
         props: ApiProps,
         conversationLambda: lambda.IFunction,
         corpusLambda: lambda.IFunction
-    ): lambda.Function {
+    ): [lambda.Function, lambda.IFunction] {
         const inferenceResource = api.root.addResource('inference', {
             defaultCorsPreflightOptions,
         });
@@ -294,7 +311,7 @@ export class Api extends Construct {
         corpusLambda.grantInvoke(inferenceLambda);
         this.addMethod(sendMessageResource, 'PUT', inferenceLambda);
 
-        return inferenceLambda;
+        return [inferenceLambda, inferenceLambdaAlias];
     }
 
     private createLambdaHandler(
