@@ -1,4 +1,4 @@
-!#/bin/bash
+#!/bin/bash
 
 # This script installs Docker and docker-compose on Amazon Linux 2023
 
