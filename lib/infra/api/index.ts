@@ -319,6 +319,7 @@ export class Api extends Construct {
         props: ApiProps,
         additionalEnvs?: Record<string, string>
     ): [lambda.Function, lambda.Alias] {
+        const isoTime = new Date().toISOString();
         const apiHandler = new lambda.Function(this, `${resourceName}ApiHandler`, {
             ...constants.LAMBDA_COMMON_PROPERTIES,
             vpc: props.baseInfra.vpc,
@@ -339,6 +340,7 @@ export class Api extends Construct {
                     props.baseInfra.systemConfig.ragConfig.embeddingsModels
                 ),
                 CONFIG_TABLE_NAME: props.baseInfra.configTable.tableName,
+                COLD_START_ISO_TIME: isoTime,
                 /* eslint-enable @typescript-eslint/naming-convention */
                 ...additionalEnvs,
             },
