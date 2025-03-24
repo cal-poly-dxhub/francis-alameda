@@ -287,6 +287,7 @@ export class IngestionPipeline extends Construct {
                     stepfn.JsonPath.stringAt('$$.Execution.Name')
                 ),
             }),
+            toleratedFailurePercentage: 50,
         }).itemProcessor(embeddingsTask);
 
         const succeedTask = new stepfn.Succeed(this, 'Succeed');
