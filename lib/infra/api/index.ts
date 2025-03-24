@@ -120,17 +120,23 @@ export class Api extends Construct {
             defaultCorsPreflightOptions,
         });
 
-        const chatApiHandler = this.createLambdaHandler('conversation', props, {
-            /* eslint-disable @typescript-eslint/naming-convention */
-            ...(props.rdsSecret && {
-                RDS_SECRET_ARN: props.rdsSecret.secretArn,
-            }),
-            ...(props.rdsEndpoint && { RDS_ENDPOINT: props.rdsEndpoint }),
-            CONVERSATION_TABLE_NAME: props.conversationTable.tableName,
-            CONVERSATION_INDEX_NAME: constants.CONVERSATION_STORE_GSI_INDEX_NAME,
-            COGNITO_USER_POOL_ID: props.authentication.userPool.userPoolId,
-            /* eslint-enable @typescript-eslint/naming-convention */
-        });
+        /* eslint-disable @typescript-eslint/no-unused-vars */
+        const [chatApiHandler, chatApiHandlerAlias] = this.createLambdaHandler(
+            'conversation',
+            props,
+            {
+                /* eslint-disable @typescript-eslint/naming-convention */
+                ...(props.rdsSecret && {
+                    RDS_SECRET_ARN: props.rdsSecret.secretArn,
+                }),
+                ...(props.rdsEndpoint && { RDS_ENDPOINT: props.rdsEndpoint }),
+                CONVERSATION_TABLE_NAME: props.conversationTable.tableName,
+                CONVERSATION_INDEX_NAME: constants.CONVERSATION_STORE_GSI_INDEX_NAME,
+                COGNITO_USER_POOL_ID: props.authentication.userPool.userPoolId,
+                /* eslint-enable @typescript-eslint/naming-convention */
+            }
+        );
+        /* eslint-enable @typescript-eslint/no-unused-vars */
         props.conversationTable.grantReadWriteData(chatApiHandler);
         props.rdsSecret?.grantRead(chatApiHandler);
         props.authentication.grantUserPoolAccess(chatApiHandler);
@@ -204,15 +210,23 @@ export class Api extends Construct {
             defaultCorsPreflightOptions,
         });
 
-        const corpusApiHandler = this.createLambdaHandler('corpus', props, {
-            /* eslint-disable @typescript-eslint/naming-convention */
-            ...(props.rdsSecret && {
-                RDS_SECRET_ARN: props.rdsSecret.secretArn,
-            }),
-            ...(props.rdsEndpoint && { RDS_ENDPOINT: props.rdsEndpoint }),
-            ...(props.knowledgeBaseId && { KNOWLEDGE_BASE_ID: props.knowledgeBaseId }),
-            /* eslint-enable @typescript-eslint/naming-convention */
-        });
+        /* eslint-disable @typescript-eslint/no-unused-vars */
+        const [corpusApiHandler, corpusApiHandlerAlias] = this.createLambdaHandler(
+            'corpus',
+            props,
+            {
+                /* eslint-disable @typescript-eslint/naming-convention */
+                ...(props.rdsSecret && {
+                    RDS_SECRET_ARN: props.rdsSecret.secretArn,
+                }),
+                ...(props.rdsEndpoint && { RDS_ENDPOINT: props.rdsEndpoint }),
+                ...(props.knowledgeBaseId && {
+                    KNOWLEDGE_BASE_ID: props.knowledgeBaseId,
+                }),
+                /* eslint-enable @typescript-eslint/naming-convention */
+            }
+        );
+        /* eslint-enable @typescript-eslint/no-unused-vars */
         corpusApiHandler.addToRolePolicy(
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
@@ -257,13 +271,19 @@ export class Api extends Construct {
             defaultCorsPreflightOptions,
         });
 
-        const inferenceLambda = this.createLambdaHandler('inference', props, {
-            /* eslint-disable @typescript-eslint/naming-convention */
-            CONVERSATION_LAMBDA_FUNC_NAME: conversationLambda.functionName,
-            CORPUS_LAMBDA_FUNC_NAME: corpusLambda.functionName,
-            GUARDRAIL_ARN: props.baseInfra.guardrail?.attrGuardrailArn ?? '',
-            /* eslint-enable @typescript-eslint/naming-convention */
-        });
+        /* eslint-disable @typescript-eslint/no-unused-vars */
+        const [inferenceLambda, inferenceLambdaAlias] = this.createLambdaHandler(
+            'inference',
+            props,
+            {
+                /* eslint-disable @typescript-eslint/naming-convention */
+                CONVERSATION_LAMBDA_FUNC_NAME: conversationLambda.functionName,
+                CORPUS_LAMBDA_FUNC_NAME: corpusLambda.functionName,
+                GUARDRAIL_ARN: props.baseInfra.guardrail?.attrGuardrailArn ?? '',
+                /* eslint-enable @typescript-eslint/naming-convention */
+            }
+        );
+        /* eslint-enable @typescript-eslint/no-unused-vars */
         props.baseInfra.grantBedrockTextModelAccess(inferenceLambda);
         props.baseInfra.grantSagemakerTextModelAccess(inferenceLambda);
         props.baseInfra.grantBedrockRerankingAccess(inferenceLambda);
@@ -281,7 +301,7 @@ export class Api extends Construct {
         resourceName: string,
         props: ApiProps,
         additionalEnvs?: Record<string, string>
-    ): lambda.Function {
+    ): [lambda.Function, lambda.Alias] {
         const apiHandler = new lambda.Function(this, `${resourceName}ApiHandler`, {
             ...constants.LAMBDA_COMMON_PROPERTIES,
             vpc: props.baseInfra.vpc,
@@ -308,6 +328,13 @@ export class Api extends Construct {
         });
         props.baseInfra.configTable.grantReadData(apiHandler);
 
-        return apiHandler;
+        // SnapStart requires that lambdas have published versions.
+        // .currentVersion creates a version automatically.
+        const alias = new lambda.Alias(this, `${resourceName}ApiHandlerAlias`, {
+            aliasName: 'current',
+            version: apiHandler.currentVersion,
+        });
+
+        return [apiHandler, alias];
     }
 }
