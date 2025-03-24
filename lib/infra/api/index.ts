@@ -108,7 +108,7 @@ export class Api extends Construct {
     private addMethod(
         resource: apigw.IResource,
         httpMethod: string,
-        handler: lambda.Function
+        handler: lambda.IFunction
     ): void {
         resource.addMethod(httpMethod, new apigw.LambdaIntegration(handler), {
             authorizationType: apigw.AuthorizationType.IAM,
