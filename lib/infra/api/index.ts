@@ -134,8 +134,7 @@ export class Api extends Construct {
             defaultCorsPreflightOptions,
         });
 
-        /* eslint-disable @typescript-eslint/no-unused-vars */
-        const [chatApiHandler, chatApiHandlerAlias] = this.createLambdaHandler(
+        const [chatApiHandlerRaw, chatApiHandler] = this.createLambdaHandler(
             'conversation',
             props,
             {
@@ -150,7 +149,6 @@ export class Api extends Construct {
                 /* eslint-enable @typescript-eslint/naming-convention */
             }
         );
-        /* eslint-enable @typescript-eslint/no-unused-vars */
         props.conversationTable.grantReadWriteData(chatApiHandler);
         props.rdsSecret?.grantRead(chatApiHandler);
         props.authentication.grantUserPoolAccess(chatApiHandler);
@@ -216,7 +214,7 @@ export class Api extends Construct {
 
         this.addMethod(downloadResource, 'GET', chatApiHandler);
 
-        return [chatApiHandler, chatApiHandlerAlias];
+        return [chatApiHandlerRaw, chatApiHandler];
     }
 
     private createCorpusResources(
@@ -228,7 +226,7 @@ export class Api extends Construct {
         });
 
         /* eslint-disable @typescript-eslint/no-unused-vars */
-        const [corpusApiHandler, corpusApiHandlerAlias] = this.createLambdaHandler(
+        const [corpusApiHandlerRaw, corpusApiHandler] = this.createLambdaHandler(
             'corpus',
             props,
             {
@@ -269,7 +267,7 @@ export class Api extends Construct {
         });
         this.addMethod(embeddingQueryResource, 'POST', corpusApiHandler);
 
-        return [corpusApiHandler, corpusApiHandlerAlias];
+        return [corpusApiHandlerRaw, corpusApiHandler];
     }
 
     private createInferenceResources(
@@ -289,7 +287,7 @@ export class Api extends Construct {
         });
 
         /* eslint-disable @typescript-eslint/no-unused-vars */
-        const [inferenceLambda, inferenceLambdaAlias] = this.createLambdaHandler(
+        const [inferenceLambdaRaw, inferenceLambda] = this.createLambdaHandler(
             'inference',
             props,
             {
@@ -311,7 +309,7 @@ export class Api extends Construct {
         corpusLambda.grantInvoke(inferenceLambda);
         this.addMethod(sendMessageResource, 'PUT', inferenceLambda);
 
-        return [inferenceLambda, inferenceLambdaAlias];
+        return [inferenceLambdaRaw, inferenceLambda];
     }
 
     private createLambdaHandler(
