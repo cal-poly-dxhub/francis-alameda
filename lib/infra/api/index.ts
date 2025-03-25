@@ -81,11 +81,14 @@ export class Api extends Construct {
         /* eslint-enable @typescript-eslint/no-unused-vars */
 
         this.inferenceLambda = inferenceLambda;
+        // Additional environment variables to be set once the stack deploys
+        const inferenceLambdaEnv: Record<string, string> = {};
         this.webSocket = new WebSocket(this, 'WebSocket', {
             baseInfra: props.baseInfra,
             userPoolId: props.authentication.userPool.userPoolId,
             appClientId: props.authentication.appClientId,
             inferenceLambda,
+            inferenceLambdaEnv,
         });
 
         // associate WAF WebACL to APIGateway if WebACL ARN is specified
@@ -111,6 +114,10 @@ export class Api extends Construct {
                     resources: [api.arnForExecuteApi('*', '/*', '*')],
                 }),
             ],
+        });
+
+        Object.entries(inferenceLambdaEnv).forEach(([key, value]) => {
+            inferenceLambdaRaw.addEnvironment(key, value);
         });
 
         this.restApi = api;

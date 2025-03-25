@@ -15,11 +15,15 @@ import * as constants from '../common/constants';
 import * as path from 'path';
 import { BaseInfra } from '../base-infra';
 
+// What's the nicest way to pass environment variables out of this?
+// - Passing some map (this is probably cleanest
+
 export interface WebSocketProps {
     readonly baseInfra: BaseInfra;
     readonly userPoolId: string;
     readonly appClientId: string;
-    readonly inferenceLambda: lambda.Function;
+    readonly inferenceLambda: lambda.IFunction;
+    readonly inferenceLambdaEnv: Record<string, string>;
 }
 
 export class WebSocket extends Construct {
@@ -142,14 +146,9 @@ export class WebSocket extends Construct {
         // Update inference lambda with necessary permissions and environment variables to access websocket resources
         wsConnectionsTable.grantReadData(props.inferenceLambda);
         props.inferenceLambda.grantInvoke(wsApiHandler);
-        props.inferenceLambda.addEnvironment(
-            'WEBSOCKET_CALLBACK_URL',
-            this.webSocketApiUrl
-        );
-        props.inferenceLambda.addEnvironment(
-            'WS_CONNECTIONS_TABLE_NAME',
-            wsConnectionsTable.tableName
-        );
+        props.inferenceLambdaEnv['WEBSOCKET_CALLBACK_URL'] = this.webSocketApiUrl;
+        props.inferenceLambdaEnv['WS_CONNECTIONS_TABLE_NAME'] =
+            wsConnectionsTable.tableName;
         props.inferenceLambda.addToRolePolicy(
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
