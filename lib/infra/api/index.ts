@@ -154,7 +154,8 @@ export class Api extends Construct {
                 CONVERSATION_INDEX_NAME: constants.CONVERSATION_STORE_GSI_INDEX_NAME,
                 COGNITO_USER_POOL_ID: props.authentication.userPool.userPoolId,
                 /* eslint-enable @typescript-eslint/naming-convention */
-            }
+            },
+            true
         );
         props.conversationTable.grantReadWriteData(chatApiHandler);
         props.rdsSecret?.grantRead(chatApiHandler);
@@ -246,7 +247,8 @@ export class Api extends Construct {
                     KNOWLEDGE_BASE_ID: props.knowledgeBaseId,
                 }),
                 /* eslint-enable @typescript-eslint/naming-convention */
-            }
+            },
+            true
         );
         /* eslint-enable @typescript-eslint/no-unused-vars */
         corpusApiHandler.addToRolePolicy(
@@ -303,7 +305,8 @@ export class Api extends Construct {
                 CORPUS_LAMBDA_FUNC_NAME: corpusLambda.functionName,
                 GUARDRAIL_ARN: props.baseInfra.guardrail?.attrGuardrailArn ?? '',
                 /* eslint-enable @typescript-eslint/naming-convention */
-            }
+            },
+            true
         );
         /* eslint-enable @typescript-eslint/no-unused-vars */
         props.baseInfra.grantBedrockTextModelAccess(inferenceLambda);
@@ -322,7 +325,8 @@ export class Api extends Construct {
     private createLambdaHandler(
         resourceName: string,
         props: ApiProps,
-        additionalEnvs?: Record<string, string>
+        additionalEnvs?: Record<string, string>,
+        snapStartEnabled = false
     ): [lambda.Function, lambda.Alias] {
         const isoTime = new Date().toISOString();
         const apiHandler = new lambda.Function(this, `${resourceName}ApiHandler`, {
@@ -349,6 +353,9 @@ export class Api extends Construct {
                 /* eslint-enable @typescript-eslint/naming-convention */
                 ...additionalEnvs,
             },
+            ...(snapStartEnabled
+                ? { snapStart: lambda.SnapStartConf.ON_PUBLISHED_VERSIONS }
+                : {}),
         });
         props.baseInfra.configTable.grantReadData(apiHandler);
 
