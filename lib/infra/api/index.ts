@@ -129,7 +129,7 @@ export class Api extends Construct {
     private createChatResources(
         api: apigw.RestApi,
         props: ApiProps
-    ): [lambda.Function, lambda.IFunction] {
+    ): [lambda.Function, lambda.Alias] {
         const chatResource = api.root.addResource('chat', {
             defaultCorsPreflightOptions,
         });
@@ -220,7 +220,7 @@ export class Api extends Construct {
     private createCorpusResources(
         api: apigw.RestApi,
         props: ApiProps
-    ): [lambda.Function, lambda.IFunction] {
+    ): [lambda.Function, lambda.Alias] {
         const corpusResource = api.root.addResource('corpus', {
             defaultCorsPreflightOptions,
         });
@@ -275,7 +275,7 @@ export class Api extends Construct {
         props: ApiProps,
         conversationLambda: lambda.IFunction,
         corpusLambda: lambda.IFunction
-    ): [lambda.Function, lambda.IFunction] {
+    ): [lambda.Function, lambda.Alias] {
         const inferenceResource = api.root.addResource('inference', {
             defaultCorsPreflightOptions,
         });
