@@ -18,7 +18,7 @@ export const METRICS_NAMESPACE = 'AWSPrototyping/Francis';
 
 export const LAMBDA_NODEJS_RUNTIME = lambda.Runtime.NODEJS_18_X;
 
-export const LAMBDA_PYTHON_RUNTIME = lambda.Runtime.PYTHON_3_11;
+export const LAMBDA_PYTHON_RUNTIME = lambda.Runtime.PYTHON_3_12;
 
 export const LAMBDA_ARCHITECTURE = lambda.Architecture.ARM_64;
 

@@ -60,21 +60,35 @@ export class Api extends Construct {
             },
         });
 
-        const corpusLambda = this.createCorpusResources(api, props);
-        const conversationLambda = this.createChatResources(api, props);
+        /* eslint-disable @typescript-eslint/no-unused-vars */
+        const [corpusLambdaRaw, corpusLambda] = this.createCorpusResources(api, props);
+        /* eslint-enable @typescript-eslint/no-unused-vars */
 
-        const inferenceLambda = this.createInferenceResources(
+        /* eslint-disable @typescript-eslint/no-unused-vars */
+        const [conversationLambdaRaw, conversationLambda] = this.createChatResources(
+            api,
+            props
+        );
+        /* eslint-enable @typescript-eslint/no-unused-vars */
+
+        /* eslint-disable @typescript-eslint/no-unused-vars */
+        const [inferenceLambdaRaw, inferenceLambda] = this.createInferenceResources(
             api,
             props,
             conversationLambda,
             corpusLambda
         );
+        /* eslint-enable @typescript-eslint/no-unused-vars */
+
         this.inferenceLambda = inferenceLambda;
+        // Additional environment variables to be set once the stack deploys
+        const inferenceLambdaEnv: Record<string, string> = {};
         this.webSocket = new WebSocket(this, 'WebSocket', {
             baseInfra: props.baseInfra,
             userPoolId: props.authentication.userPool.userPoolId,
             appClientId: props.authentication.appClientId,
             inferenceLambda,
+            inferenceLambdaEnv,
         });
 
         // associate WAF WebACL to APIGateway if WebACL ARN is specified
@@ -102,35 +116,47 @@ export class Api extends Construct {
             ],
         });
 
+        Object.entries(inferenceLambdaEnv).forEach(([key, value]) => {
+            inferenceLambdaRaw.addEnvironment(key, value);
+        });
+
         this.restApi = api;
     }
 
     private addMethod(
         resource: apigw.IResource,
         httpMethod: string,
-        handler: lambda.Function
+        handler: lambda.IFunction
     ): void {
         resource.addMethod(httpMethod, new apigw.LambdaIntegration(handler), {
             authorizationType: apigw.AuthorizationType.IAM,
         });
     }
 
-    private createChatResources(api: apigw.RestApi, props: ApiProps): lambda.Function {
+    private createChatResources(
+        api: apigw.RestApi,
+        props: ApiProps
+    ): [lambda.Function, lambda.Alias] {
         const chatResource = api.root.addResource('chat', {
             defaultCorsPreflightOptions,
         });
 
-        const chatApiHandler = this.createLambdaHandler('conversation', props, {
-            /* eslint-disable @typescript-eslint/naming-convention */
-            ...(props.rdsSecret && {
-                RDS_SECRET_ARN: props.rdsSecret.secretArn,
-            }),
-            ...(props.rdsEndpoint && { RDS_ENDPOINT: props.rdsEndpoint }),
-            CONVERSATION_TABLE_NAME: props.conversationTable.tableName,
-            CONVERSATION_INDEX_NAME: constants.CONVERSATION_STORE_GSI_INDEX_NAME,
-            COGNITO_USER_POOL_ID: props.authentication.userPool.userPoolId,
-            /* eslint-enable @typescript-eslint/naming-convention */
-        });
+        const [chatApiHandlerRaw, chatApiHandler] = this.createLambdaHandler(
+            'conversation',
+            props,
+            {
+                /* eslint-disable @typescript-eslint/naming-convention */
+                ...(props.rdsSecret && {
+                    RDS_SECRET_ARN: props.rdsSecret.secretArn,
+                }),
+                ...(props.rdsEndpoint && { RDS_ENDPOINT: props.rdsEndpoint }),
+                CONVERSATION_TABLE_NAME: props.conversationTable.tableName,
+                CONVERSATION_INDEX_NAME: constants.CONVERSATION_STORE_GSI_INDEX_NAME,
+                COGNITO_USER_POOL_ID: props.authentication.userPool.userPoolId,
+                /* eslint-enable @typescript-eslint/naming-convention */
+            },
+            true
+        );
         props.conversationTable.grantReadWriteData(chatApiHandler);
         props.rdsSecret?.grantRead(chatApiHandler);
         props.authentication.grantUserPoolAccess(chatApiHandler);
@@ -196,23 +222,35 @@ export class Api extends Construct {
 
         this.addMethod(downloadResource, 'GET', chatApiHandler);
 
-        return chatApiHandler;
+        return [chatApiHandlerRaw, chatApiHandler];
     }
 
-    private createCorpusResources(api: apigw.RestApi, props: ApiProps): lambda.Function {
+    private createCorpusResources(
+        api: apigw.RestApi,
+        props: ApiProps
+    ): [lambda.Function, lambda.Alias] {
         const corpusResource = api.root.addResource('corpus', {
             defaultCorsPreflightOptions,
         });
 
-        const corpusApiHandler = this.createLambdaHandler('corpus', props, {
-            /* eslint-disable @typescript-eslint/naming-convention */
-            ...(props.rdsSecret && {
-                RDS_SECRET_ARN: props.rdsSecret.secretArn,
-            }),
-            ...(props.rdsEndpoint && { RDS_ENDPOINT: props.rdsEndpoint }),
-            ...(props.knowledgeBaseId && { KNOWLEDGE_BASE_ID: props.knowledgeBaseId }),
-            /* eslint-enable @typescript-eslint/naming-convention */
-        });
+        /* eslint-disable @typescript-eslint/no-unused-vars */
+        const [corpusApiHandlerRaw, corpusApiHandler] = this.createLambdaHandler(
+            'corpus',
+            props,
+            {
+                /* eslint-disable @typescript-eslint/naming-convention */
+                ...(props.rdsSecret && {
+                    RDS_SECRET_ARN: props.rdsSecret.secretArn,
+                }),
+                ...(props.rdsEndpoint && { RDS_ENDPOINT: props.rdsEndpoint }),
+                ...(props.knowledgeBaseId && {
+                    KNOWLEDGE_BASE_ID: props.knowledgeBaseId,
+                }),
+                /* eslint-enable @typescript-eslint/naming-convention */
+            },
+            true
+        );
+        /* eslint-enable @typescript-eslint/no-unused-vars */
         corpusApiHandler.addToRolePolicy(
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
@@ -238,7 +276,7 @@ export class Api extends Construct {
         });
         this.addMethod(embeddingQueryResource, 'POST', corpusApiHandler);
 
-        return corpusApiHandler;
+        return [corpusApiHandlerRaw, corpusApiHandler];
     }
 
     private createInferenceResources(
@@ -246,7 +284,7 @@ export class Api extends Construct {
         props: ApiProps,
         conversationLambda: lambda.IFunction,
         corpusLambda: lambda.IFunction
-    ): lambda.Function {
+    ): [lambda.Function, lambda.Alias] {
         const inferenceResource = api.root.addResource('inference', {
             defaultCorsPreflightOptions,
         });
@@ -257,13 +295,20 @@ export class Api extends Construct {
             defaultCorsPreflightOptions,
         });
 
-        const inferenceLambda = this.createLambdaHandler('inference', props, {
-            /* eslint-disable @typescript-eslint/naming-convention */
-            CONVERSATION_LAMBDA_FUNC_NAME: conversationLambda.functionName,
-            CORPUS_LAMBDA_FUNC_NAME: corpusLambda.functionName,
-            GUARDRAIL_ARN: props.baseInfra.guardrail?.attrGuardrailArn ?? '',
-            /* eslint-enable @typescript-eslint/naming-convention */
-        });
+        /* eslint-disable @typescript-eslint/no-unused-vars */
+        const [inferenceLambdaRaw, inferenceLambda] = this.createLambdaHandler(
+            'inference',
+            props,
+            {
+                /* eslint-disable @typescript-eslint/naming-convention */
+                CONVERSATION_LAMBDA_FUNC_NAME: conversationLambda.functionName,
+                CORPUS_LAMBDA_FUNC_NAME: corpusLambda.functionName,
+                GUARDRAIL_ARN: props.baseInfra.guardrail?.attrGuardrailArn ?? '',
+                /* eslint-enable @typescript-eslint/naming-convention */
+            },
+            true
+        );
+        /* eslint-enable @typescript-eslint/no-unused-vars */
         props.baseInfra.grantBedrockTextModelAccess(inferenceLambda);
         props.baseInfra.grantSagemakerTextModelAccess(inferenceLambda);
         props.baseInfra.grantBedrockRerankingAccess(inferenceLambda);
@@ -274,14 +319,16 @@ export class Api extends Construct {
         corpusLambda.grantInvoke(inferenceLambda);
         this.addMethod(sendMessageResource, 'PUT', inferenceLambda);
 
-        return inferenceLambda;
+        return [inferenceLambdaRaw, inferenceLambda];
     }
 
     private createLambdaHandler(
         resourceName: string,
         props: ApiProps,
-        additionalEnvs?: Record<string, string>
-    ): lambda.Function {
+        additionalEnvs?: Record<string, string>,
+        snapStartEnabled = false
+    ): [lambda.Function, lambda.Alias] {
+        const isoTime = new Date().toISOString();
         const apiHandler = new lambda.Function(this, `${resourceName}ApiHandler`, {
             ...constants.LAMBDA_COMMON_PROPERTIES,
             vpc: props.baseInfra.vpc,
@@ -302,12 +349,23 @@ export class Api extends Construct {
                     props.baseInfra.systemConfig.ragConfig.embeddingsModels
                 ),
                 CONFIG_TABLE_NAME: props.baseInfra.configTable.tableName,
+                COLD_START_ISO_TIME: isoTime,
                 /* eslint-enable @typescript-eslint/naming-convention */
                 ...additionalEnvs,
             },
+            ...(snapStartEnabled
+                ? { snapStart: lambda.SnapStartConf.ON_PUBLISHED_VERSIONS }
+                : {}),
         });
         props.baseInfra.configTable.grantReadData(apiHandler);
 
-        return apiHandler;
+        // SnapStart requires that lambdas have published versions.
+        // .currentVersion creates a version automatically.
+        const alias = new lambda.Alias(this, `${resourceName}ApiHandlerAlias`, {
+            aliasName: 'current',
+            version: apiHandler.currentVersion,
+        });
+
+        return [apiHandler, alias];
     }
 }
