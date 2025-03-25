@@ -27,7 +27,7 @@ export interface IngestionPipelineProps {
     readonly inputAssetsBucket: s3.IBucket;
 }
 
-const embeddingsMemorySize = 4096; // Overrides default pipeline lambda memory size
+const embeddingsMemorySize = 3008; // Overrides default pipeline lambda memory size
 
 export class IngestionPipeline extends Construct {
     public readonly ingestionStateMachine: stepfn.StateMachine;

@@ -152,7 +152,7 @@ Both configurations maintain the same high-level architecture while offering dif
 -   The computer must have Docker and Docker Compose installed (tested versions: Docker 25.0.8 with Docker Compose 2.34.0)
 -   You should also have the Git CLI installed and clone permissions for this repository
 
-The recommended system configuration is a `t4g.large` Amazon EC2 instance running Amazon Linux 2023 (AMI: `ami-0345469b8a1ca112a`), with 100 GiB EBS gp3 storage. On this configuration, `deployment/docker_amazon_linux_2023.sh` installs the tested versions of Docker and Docker Compose. See [this link](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-instance-wizard.html) for instructions on configuring such a system. 
+The AMI with ID `ami-052fc449700c299de` establishes a tested deployment environment; we recommend deploying it on a `t4g.large` instance with 100 GiB gpi3 storage. See [this link](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-instance-wizard.html) for instructions on configuring such a system. Using SSH or EC2 Instance Connect, log in as `ec2-user`.
 
 ### AWS account
 
@@ -165,19 +165,10 @@ The recommended system configuration is a `t4g.large` Amazon EC2 instance runnin
 
 ### Build and deploy
 
-- Install `git` (on Amazon Linux 2023: `sudo dnf install git`)
+-   Ensure you have the Git CLI (tested: v2.47.1), Docker (tested: v25.0.8), and Docker Compose (tested: v2.34.0) installed and that you are on an ARM computer.
 
-- Run a Git clone:
-```
-git clone -b deployment https://github.com/cal-poly-dxhub/francis-alameda && cd francis-alameda
-``` 
-
-- If installing Docker and Docker Compose using the provided script on an ARM Amazon Linux 2023 instance, run:
-
-```bash
-bash deployment/docker_amazon_linux_2023.sh && newgrp docker
-```
-
+-   The EC2 AMI mentioned above comes with this repository cloned; if using it run `cd francis-alameda`. Otherwise, run `git clone https://github.com/cal-poly-dxhub/francis-alameda/ && cd francis-alameda`. 
+-   
 -   Set your AWS credentials and an administrator email in `deployment/credentials.env`.
 
 -   Run `docker-compose run deployment`.
