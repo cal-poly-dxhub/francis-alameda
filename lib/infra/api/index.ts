@@ -61,18 +61,18 @@ export class Api extends Construct {
         });
 
         /* eslint-disable @typescript-eslint/no-unused-vars */
-        const [corpusLambda, corpusLambdaAlias] = this.createCorpusResources(api, props);
+        const [corpusLambdaRaw, corpusLambda] = this.createCorpusResources(api, props);
         /* eslint-enable @typescript-eslint/no-unused-vars */
 
         /* eslint-disable @typescript-eslint/no-unused-vars */
-        const [conversationLambda, conversationLambdaAlias] = this.createChatResources(
+        const [conversationLambdaRaw, conversationLambda] = this.createChatResources(
             api,
             props
         );
         /* eslint-enable @typescript-eslint/no-unused-vars */
 
         /* eslint-disable @typescript-eslint/no-unused-vars */
-        const [inferenceLambda, inferenceLambdaAlias] = this.createInferenceResources(
+        const [inferenceLambdaRaw, inferenceLambda] = this.createInferenceResources(
             api,
             props,
             conversationLambda,
