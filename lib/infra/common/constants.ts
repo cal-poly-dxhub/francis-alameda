@@ -24,7 +24,7 @@ export const LAMBDA_ARCHITECTURE = lambda.Architecture.ARM_64;
 
 export const LAMBDA_POWERTOOLS_LAYER_VERSION = '5';
 
-export const LAMBDA_POWERTOOLS_PYTHON_VERSION = 'python311';
+export const LAMBDA_POWERTOOLS_PYTHON_VERSION = 'python312';
 
 export const CHUNK_SIZE_DOC_SPLIT = '1000';
 
