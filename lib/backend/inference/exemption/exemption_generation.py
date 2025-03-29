@@ -107,7 +107,7 @@ def _store_in_conversation_store(chat_id: str, user_id: str, decision_tree: dict
         "body": json.dumps(pair),
     }
 
-    _ = invoke_lambda_function(CONVERSATION_LAMBDA_FUNC_NAME, request_payload)
+    _ = invoke_lambda_function(CONVERSATION_LAMBDA_FUNC_NAME, request_payload, invocation_type="Event")
 
 
 @tracer.capture_method
