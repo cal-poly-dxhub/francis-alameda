@@ -116,13 +116,12 @@ export class BaseInfra extends Construct {
             ...props,
         });
 
-        this.pdftoolLayer = new lambda.LayerVersion(this, 'PdfToolLayer', {
-            code: lambda.Code.fromAsset(
-                path.join(constants.BACKEND_DIR, 'layers', 'pdf-tools-layer')
-            ),
+        this.pdftoolLayer = new Layer(this, 'PdfToolLayer', {
+            path: path.join(constants.BACKEND_DIR, 'layers', 'pdf-tools-layer'),
+            runtime: constants.LAMBDA_PYTHON_RUNTIME,
+            architecture: constants.LAMBDA_ARCHITECTURE,
             description: 'Utilities to process pdfs (pdfplumber and textractor).',
-            ...props,
-        });
+        }).layer;
 
         if (props.systemConfig.wafConfig?.enableApiGatewayWaf) {
             this.webAcl = new WafWebAcl(this, 'WafWebACL', {
