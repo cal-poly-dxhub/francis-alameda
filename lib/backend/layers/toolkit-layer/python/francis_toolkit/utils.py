@@ -213,8 +213,12 @@ def invoke_lambda_function(
             Payload=json.dumps(request_payload).encode("utf-8"),
         )
 
-        # Parse the response payload
-        response_payload = json.loads(response["Payload"].read().decode("utf-8"))
+        # Parse the response payloadZ
+        payload = response["Payload"].read().decode("utf-8")
+        if not payload:
+            return {}
+
+        response_payload = json.loads(payload)
 
         # Check if the Lambda function execution was successful
         if 200 <= response["StatusCode"] <= 299:
