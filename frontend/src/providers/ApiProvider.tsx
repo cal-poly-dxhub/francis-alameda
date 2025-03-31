@@ -12,7 +12,7 @@ import { Configuration, DefaultApi, DefaultApiClientProvider } from '../react-qu
 
 export const useApiClient = () => {
   const runtimeConfig = useRuntimeConfig();
-  const client = useSigv4Client();
+  const client = useSigv4Client('execute-api', true);
 
   return useMemo(
     () =>
