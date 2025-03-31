@@ -15,11 +15,15 @@ import * as constants from '../common/constants';
 import * as path from 'path';
 import { BaseInfra } from '../base-infra';
 
+// What's the nicest way to pass environment variables out of this?
+// - Passing some map (this is probably cleanest
+
 export interface WebSocketProps {
     readonly baseInfra: BaseInfra;
     readonly userPoolId: string;
     readonly appClientId: string;
-    readonly inferenceLambda: lambda.Function;
+    readonly inferenceLambda: lambda.IFunction;
+    readonly inferenceLambdaEnv: Record<string, string>;
 }
 
 export class WebSocket extends Construct {
@@ -40,7 +44,8 @@ export class WebSocket extends Construct {
             pointInTimeRecovery: true,
         });
 
-        const wsApiHandler = new lambda.Function(this, 'WsApiHandler', {
+        const isoTimestamp = new Date().toISOString();
+        const wsApiHandlerRaw = new lambda.Function(this, 'WsApiHandler', {
             ...constants.LAMBDA_COMMON_PROPERTIES,
             vpc: props.baseInfra.vpc,
             runtime: constants.LAMBDA_PYTHON_RUNTIME,
@@ -61,9 +66,18 @@ export class WebSocket extends Construct {
                 POWERTOOLS_SERVICE_NAME: 'ws-api',
                 WS_CONNECTIONS_TABLE_NAME: wsConnectionsTable.tableName,
                 INFERENCE_LAMBDA_FUNC_NAME: props.inferenceLambda.functionName,
+                ISO_TIMESTAMP: isoTimestamp, // ensure CDK updates
                 /* eslint-enable @typescript-eslint/naming-convention */
             },
+            snapStart: lambda.SnapStartConf.ON_PUBLISHED_VERSIONS,
         });
+
+        // TODO: better alias name
+        const wsApiHandler = new lambda.Alias(this, 'WsApiHandlerAlias', {
+            aliasName: 'current',
+            version: wsApiHandlerRaw.currentVersion,
+        });
+
         wsConnectionsTable.grantReadWriteData(wsApiHandler);
 
         const authorizerHandler = new lambda.Function(this, 'WsAuthorizerHandler', {
@@ -142,14 +156,9 @@ export class WebSocket extends Construct {
         // Update inference lambda with necessary permissions and environment variables to access websocket resources
         wsConnectionsTable.grantReadData(props.inferenceLambda);
         props.inferenceLambda.grantInvoke(wsApiHandler);
-        props.inferenceLambda.addEnvironment(
-            'WEBSOCKET_CALLBACK_URL',
-            this.webSocketApiUrl
-        );
-        props.inferenceLambda.addEnvironment(
-            'WS_CONNECTIONS_TABLE_NAME',
-            wsConnectionsTable.tableName
-        );
+        props.inferenceLambdaEnv['WEBSOCKET_CALLBACK_URL'] = this.webSocketApiUrl;
+        props.inferenceLambdaEnv['WS_CONNECTIONS_TABLE_NAME'] =
+            wsConnectionsTable.tableName;
         props.inferenceLambda.addToRolePolicy(
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
