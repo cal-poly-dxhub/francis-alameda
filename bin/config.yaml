@@ -1,12 +1,12 @@
 systemConfig:
   ingestionConfig:
-    maxConcurrency: 50
+    maxConcurrency: 5
   retainData: false
   applicationName: francis-alameda
   llmConfig:
     streaming: true
     maxConversationHistory: 5
-    maxCorpusDocuments: 10
+    maxCorpusDocuments: 100
     corpusSimilarityThreshold: 0.3
     rerankingConfig:
       modelConfig:
@@ -307,15 +307,15 @@ systemConfig:
       corpusType: 'default'
       corpusProperties:
         chunkingConfiguration:
-          chunkSize: 512
-          chunkOverlap: 150
+          chunkSize: 5000
+          chunkOverlap: 0
   exemptionConfig:
     modelConfig:
       provider: bedrock
       modelId: anthropic.claude-3-5-sonnet-20240620-v1:0
       modelKwargs:
         maxTokens: 4096
-        temperature: 0.1
+        temperature: 0
         topP: 0.99
     promptTemplate: |
       You are a property tax exemption specialist for the Alameda County Assessor's Office. Your role is to help taxpayers navigate exemption requirements and determine which forms they need to file.
